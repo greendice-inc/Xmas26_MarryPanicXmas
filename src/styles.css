@@ -4,6 +4,22 @@
    座標系は 1920x1200 の Stage 内（px 指定）
    ============================================================ */
 
+/* セリフは Line、それ以外は Other。どちらも1ファイルなので、太さの指定では別の書体を合成しない */
+@font-face {
+  font-family: 'Line';
+  src: url('/font/Line/MPLUSRounded1c-ExtraBold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Other';
+  src: url('/font/Other/NotoSansJP-Medium.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --red: #b3112b;
   --red-dark: #8f0d22;
@@ -26,7 +42,7 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body, #root { margin: 0; height: 100%; overflow: hidden; background: #000; touch-action: manipulation; }
 body {
-  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  font-family: 'Other', sans-serif;
   font-weight: 700;
   color: var(--ink);
 }
@@ -86,7 +102,6 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 .dot.off { background: #c4c4c8; }
 
 /* 隠しメニュー（左上） */
-.secret-zone { position: absolute; left: 0; top: 0; width: 220px; height: 220px; z-index: 1000; }
 .modal-back { position: absolute; inset: 0; background: rgba(20, 20, 20, 0.5); z-index: 1001; display: flex; align-items: center; justify-content: center; animation: fade-in .2s ease both; }
 .modal { background: #fff; border-radius: 40px; padding: 54px 70px; display: flex; flex-direction: column; gap: 22px; min-width: 780px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: pop-in .25s cubic-bezier(.2, 1.3, .4, 1) both; }
 .modal h2 { margin: 0 0 10px; text-align: center; font-size: 46px; font-weight: 900; }
@@ -142,9 +157,18 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 /* 左列にチーム1-6、右列に7-12（縦方向に流し込む） */
 .staff-list { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, 1fr); grid-auto-flow: column; gap: 18px 36px; }
 .staff-row {
-  position: relative; display: grid; grid-template-columns: 44px 190px 160px 130px 1fr; align-items: center; gap: 10px;
-  font-size: 38px; background: #fff; border-radius: 24px; padding: 0 28px 0 36px; box-shadow: var(--shadow-card);
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  background: #fff; border-radius: 24px; padding: 0 28px 0 36px; box-shadow: var(--shadow-card);
 }
+.staff-row-main { display: grid; grid-template-columns: 44px 190px 160px 130px 1fr; align-items: center; gap: 10px; font-size: 38px; }
+.staff-order { display: flex; align-items: center; gap: 14px; min-height: 44px; font-size: 26px; }
+.order-none { color: #b0b0b5; }
+.order-status { flex: none; font-weight: 900; border-radius: 999px; padding: 4px 18px; }
+.order-status.ordered { background: #fff1d6; color: #b36b00; }
+.order-status.delivered { background: #dfeafb; color: #1f5fc4; }
+.order-status.solved { background: #e4f1e8; color: #2a7a45; }
+.order-items { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-sub); }
+button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radius: 12px; }
 .staff-row::before { content: ''; position: absolute; left: 0; top: 16px; bottom: 16px; width: 10px; border-radius: 0 8px 8px 0; background: var(--line); }
 .staff-row.is-locked::before { background: var(--red); }
 .staff-row.is-open::before { background: #3cb563; }
@@ -165,13 +189,12 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 .log {
   flex: 1; min-height: 0; margin: 0; overflow: auto; user-select: text;
   background: #2b2b2e; color: #e4e4e7; border-radius: 28px; padding: 28px 32px;
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 28px; font-weight: 500; line-height: 1.5;
+  font-size: 28px; font-weight: 500; line-height: 1.5;
   box-shadow: var(--shadow-card);
 }
 .warn { margin: 0; align-self: flex-start; background: #f6e3e6; color: var(--red); border-radius: 20px; padding: 14px 28px; font-size: 30px; }
 
 /* ---------- プレイヤー ---------- */
-.player { padding: 0; background: var(--bg); }
 .center-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; font-size: 44px; color: var(--ink-sub); }
 .start-menu {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px;
@@ -212,25 +235,61 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 .novel-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .placeholder { display: flex; align-items: center; justify-content: center; font-size: 60px; }
 .novel-bg.placeholder { background: linear-gradient(160deg, #e4e4e7, #cfcfd4); color: rgba(0, 0, 0, 0.2); }
-.novel-char { position: absolute; left: 50%; bottom: 330px; width: 520px; height: 640px; margin-left: -260px; }
-.novel-char::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: -14px; height: 40px; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, 0.22), transparent 70%); }
-.novel-char > * { position: relative; }
-.novel-char img, .novel-char .placeholder { width: 100%; height: 100%; object-fit: contain; background: none; font-size: 360px; }
-.novel-char.talking { animation: talk .35s ease-in-out infinite alternate; }
-@keyframes talk { from { transform: translateY(0); } to { transform: translateY(-28px); } }
-.novel-window {
-  position: absolute; left: 80px; right: 80px; bottom: 50px; height: 280px; padding: 58px 56px 30px;
-  background: rgba(255, 255, 255, 0.96); border-radius: 40px; box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25); color: var(--ink);
+/* キャラクター：画面の真ん中に立つ。登場時は画面の下からせり上がる */
+.novel-char { position: absolute; bottom: 290px; width: 520px; height: 640px; animation: char-in .9s var(--lead, 0ms) cubic-bezier(.2, 1.15, .4, 1) both; }
+.novel-char.pos-center { left: 50%; margin-left: -260px; }
+.novel-char.pos-left { left: 140px; }
+.novel-char.pos-right { right: 140px; }
+.novel-char.is-silent .novel-char-body img { filter: brightness(.7); }
+.novel-char-body { position: relative; width: 100%; height: 100%; }
+.novel-char-body img, .novel-char-body .placeholder { width: 100%; height: 100%; object-fit: contain; object-position: bottom; background: none; font-size: 360px; }
+.novel-char-body.talking { animation: talk .35s ease-in-out infinite alternate; }
+@keyframes talk { from { transform: translateY(0); } to { transform: translateY(-18px); } }
+@keyframes char-in { from { transform: translateY(calc(100% + 300px)); } to { transform: none; } }
+/* キラキラ */
+.novel-sparkle { position: absolute; width: 56px; height: 56px; animation: twinkle 1s ease-in-out infinite alternate; }
+.novel-sparkle.sp1 { left: 40px; top: 120px; }
+.novel-sparkle.sp2 { right: 20px; top: 70px; width: 44px; height: 44px; animation-delay: .4s; }
+@keyframes twinkle { from { transform: scale(.6) rotate(0deg); opacity: .6; } to { transform: scale(1.1) rotate(18deg); opacity: 1; } }
+/* 台詞パネル：画面の下。クリスマスの飾り（キャンディケーン柄の縁・雪・ヒイラギ）付き。キャラが立ち上がったころにスッと出る */
+.novel-panel {
+  position: absolute; left: 50px; right: 50px; bottom: 36px; height: 270px; padding: 36px 70px;
+  display: flex; align-items: center; color: var(--ink);
+  background: #fff; border: 4px solid var(--charcoal); border-radius: 20px;
+  animation: panel-in .5s calc(var(--lead, 0ms) + .7s) cubic-bezier(.2, 1, .3, 1) both;
 }
-.novel-window .speaker {
-  position: absolute; left: 48px; top: -34px; font-size: 40px; font-weight: 900; color: #fff;
-  background: var(--red); border-radius: 999px; padding: 8px 42px; box-shadow: 0 6px 14px rgba(var(--red-rgb), 0.3);
-}
-.novel-window .text { font-size: 46px; line-height: 1.5; }
-.novel-window .next { position: absolute; right: 52px; bottom: 22px; font-size: 40px; color: var(--red); animation: bob .8s ease-in-out infinite; }
+/* 吹き出しの左上：話している人の名前 */
+.novel-speaker { position: absolute; left: 40px; top: -26px; padding: 6px 30px; font-size: 36px; font-weight: 900; color: #fff; background: var(--charcoal); border-radius: 999px; }
+.novel-text { position: relative; width: 100%; display: flex; flex-direction: column; gap: 24px; font-family: 'Line', sans-serif; }
+.novel-text .text { line-height: 1.5; font-weight: 900; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12); min-height: 1.5em; }
+.novel-text.size-sm .text { font-size: 38px; }
+.novel-text.size-md .text { font-size: 50px; }
+.novel-text.size-lg .text { font-size: 68px; }
+.novel-text .hl { color: var(--red); }
+.novel-panel-img { max-width: 100%; max-height: 260px; object-fit: contain; align-self: center; }
+.novel-panel .next { position: absolute; right: 40px; bottom: 16px; font-size: 40px; color: var(--charcoal); animation: bob .8s ease-in-out infinite; }
+/* タップで登場演出を飛ばしたとき */
+.novel.skip .novel-char, .novel.skip .novel-panel { animation-duration: .01s; animation-delay: 0s; }
 @keyframes bob { 50% { transform: translateY(8px); } }
 
 /* ---------- ゲーム ---------- */
+.player { padding: 0; background: var(--bokeh), var(--bg); }
+/* 会話・ゲーム画面の枠 */
+.play-frame {
+  position: absolute; left: 40px; right: 40px; top: 40px; bottom: 200px; overflow: hidden;
+  border: 10px solid var(--charcoal); border-radius: 36px; background: #fff;
+  box-shadow: 0 0 0 4px #fff, 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+/* 会話中・マーク当て：外側の枠なし。背景は画面いっぱいに広げる */
+.play-frame.is-open {
+  inset: 0; overflow: visible;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+/* 枠があったときの見た目の位置を保ったまま、背景だけ端まで出す */
+.play-frame.is-open .novel-panel { left: 90px; right: 90px; bottom: 236px; }
+.play-frame.is-open .novel-char { bottom: 490px; }
+.game-menu { position: absolute; left: 40px; right: 40px; bottom: 40px; height: 120px; z-index: 6; display: flex; gap: 28px; }
+.game-menu button { flex: 1; font-size: 44px; padding: 0; }
 .game {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px;
   background: linear-gradient(#f3f3f4, #e4e4e7);
@@ -258,3 +317,171 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* 暗転からのフェードイン */
+.fade-black { position: absolute; inset: 0; background: #000; z-index: 900; pointer-events: none; animation: fade-out 2.5s ease both; }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* 長押しボタン（マスター：全端末リセット） */
+button.hold-btn { position: relative; overflow: hidden; --edge: #1c1c1f; background: var(--charcoal); font-size: 32px; padding: 16px 40px; touch-action: none; }
+.hold-fill { position: absolute; inset: 0; background: var(--red); transform-origin: left; transform: scaleX(0); pointer-events: none; }
+.hold-label { position: relative; }
+
+.conn-progress { margin-left: auto; font-weight: 900; color: var(--ink-sub); display: flex; gap: 10px; }
+
+/* 2回押しボタンの待機状態 */
+button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
+@keyframes armed-pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+
+.game-menu .on { --edge: var(--red); box-shadow: inset 0 0 0 4px var(--red), 0 6px 0 var(--red); color: var(--red); }
+
+/* ---------- Santazon（注文画面） ---------- */
+.santazon { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; background: #eaeded; color: #0f1111; }
+.santazon button { font: inherit; border: 0; border-radius: 10px; box-shadow: none; transform: none; cursor: pointer; color: inherit; background: none; padding: 0; }
+.santazon button:active { transform: none; box-shadow: none; filter: brightness(.92); }
+.santazon button:disabled, .santazon button:disabled:active { background: #d5d9d9; color: #8a8f8f; box-shadow: none; cursor: default; filter: none; }
+.sz-header { flex: none; height: 96px; display: flex; align-items: center; gap: 36px; padding: 0 30px; background: #131921; color: #fff; }
+.santazon .sz-home { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; color: #fff; border-radius: 12px; }
+.santazon .sz-home:active { background: #232f3e; }
+.sz-logo { position: relative; font-size: 52px; font-weight: 900; letter-spacing: .02em; padding-bottom: 8px; }
+.sz-logo::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: 2px; height: 14px; border-bottom: 6px solid #ff9900; border-radius: 0 0 60% 60% / 0 0 100% 100%; }
+.sz-tabs { display: flex; gap: 10px; margin-left: 30px; height: 100%; }
+.santazon .sz-tabs button { height: 100%; padding: 0 40px; font-size: 32px; font-weight: 700; color: #ddd; border-radius: 0; border-bottom: 8px solid transparent; }
+.santazon .sz-tabs button.on { color: #fff; border-bottom-color: #ff9900; }
+.sz-body { flex: 1; min-height: 0; display: flex; gap: 24px; padding: 24px; }
+.sz-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
+.sz-toolbar { display: flex; align-items: center; gap: 20px; }
+.santazon select { font: inherit; font-size: 30px; padding: 12px 20px; border: 2px solid #888c8c; border-radius: 10px; background: #f0f2f2; color: #0f1111; min-width: 420px; }
+.santazon .sz-btn { font-size: 30px; font-weight: 700; padding: 14px 32px; border-radius: 999px; }
+.santazon .sz-yellow { background: #ffd814; color: #0f1111; }
+.santazon .sz-orange { background: #ffa41c; color: #0f1111; }
+.santazon .sz-light { background: #fff; color: #0f1111; box-shadow: inset 0 0 0 2px #d5d9d9; }
+.santazon .sz-sm { font-size: 24px; padding: 8px 18px; }
+.sz-grid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-content: start; }
+.sz-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.sz-row { display: flex; align-items: center; gap: 16px; background: #fff; border-radius: 14px; padding: 14px 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.sz-row .sz-name { flex: 1; min-width: 0; }
+.sz-row .sz-code { flex: none; white-space: nowrap; }
+.sz-row .sz-stock { flex: none; white-space: nowrap; min-width: 160px; text-align: right; }
+.sz-row .sz-btn { flex: none; }
+.sz-row.sold-out { background: #e3e6e6; color: #8a8f8f; }
+.sz-row.sold-out .sz-code, .sz-row.sold-out .sz-stock { color: #8a8f8f; }
+.sz-card { display: flex; flex-direction: column; gap: 6px; background: #fff; border-radius: 14px; padding: 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.sz-card .sz-btn { margin-top: 8px; }
+.sz-thumb { position: relative; height: 210px; display: flex; align-items: center; justify-content: center; background: #f7f7f7; border-radius: 10px; overflow: hidden; }
+.sz-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sz-emoji { font-size: 120px; }
+.sz-name { font-size: 28px; font-weight: 700; line-height: 1.3; }
+.sz-name-lg { font-size: 38px; }
+.sz-price { font-size: 40px; font-weight: 700; color: #b12704; }
+.sz-code { font-size: 26px; font-weight: 700; color: #565959; }
+.sz-empty-wide { grid-column: 1 / -1; }
+.sz-price-sm { font-size: 24px; color: #565959; }
+.sz-stock { font-size: 24px; color: #067d62; font-weight: 700; }
+.sz-card.sold-out { background: #e3e6e6; color: #8a8f8f; box-shadow: none; }
+.sz-card.sold-out .sz-code, .sz-card.sold-out .sz-stock { color: #8a8f8f; }
+.sz-card.sold-out .sz-thumb { filter: grayscale(1); opacity: .6; }
+.sz-soldout { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 900; color: #fff; background: rgba(60, 60, 60, 0.6); }
+.sz-cart { flex: none; width: 500px; display: flex; flex-direction: column; gap: 12px; background: #fff; border-radius: 14px; padding: 22px 24px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.sz-cart h2 { margin: 0; font-size: 34px; font-weight: 700; padding-bottom: 8px; border-bottom: 2px solid #e7e7e7; }
+.sz-cart-count { font-size: 24px; color: #565959; }
+.sz-cart-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.sz-cart-item { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid #e7e7e7; }
+.sz-cart-emoji { font-size: 56px; }
+.sz-cart-info { flex: 1; min-width: 0; }
+.sz-empty { color: #8a8f8f; font-size: 28px; padding: 20px 0; text-align: center; }
+.sz-note { font-size: 24px; font-weight: 700; color: #b12704; }
+.sz-total { font-size: 30px; }
+.sz-total b { font-size: 40px; color: #b12704; }
+.sz-confirm { font-size: 34px; padding: 18px 0; }
+.sz-search { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 18px; background: #fff; border-radius: 14px; padding: 24px 30px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); }
+.sz-search-lead { margin: 0; font-size: 28px; line-height: 1.5; color: #333; }
+.santazon .sz-search-list { align-self: flex-end; margin-top: -8px; }
+.sz-slots { display: flex; align-items: center; }
+.sz-slot-wrap { display: flex; align-items: center; }
+.sz-dash { font-size: 44px; font-weight: 900; padding: 0 14px; color: #565959; }
+.sz-slot { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; font-size: 80px; font-weight: 900; border: 5px dashed #888c8c; border-radius: 14px; background: #f7f7f7; cursor: pointer; }
+.sz-slot.filled { border-style: solid; border-color: #ff9900; background: #fff8e8; }
+.sz-search-actions { display: flex; gap: 20px; }
+.sz-result { flex: 1; min-height: 0; width: 100%; overflow: auto; }
+.sz-panels { display: flex; gap: 14px; }
+.santazon .sz-panel { width: 110px; height: 110px; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 900; color: #fff; background: #232f3e; border-radius: 14px; box-shadow: 0 5px 0 #0b1118; touch-action: none; cursor: grab; }
+.santazon .sz-panel:active { filter: none; }
+.sz-ghost { position: absolute; z-index: 30; pointer-events: none; opacity: .85; transform: scale(1.1); }
+.sz-detail { display: flex; gap: 24px; align-items: flex-start; background: #f7f7f7; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+.sz-thumb-lg { flex: none; width: 240px; height: 240px; background: #fff; }
+.sz-detail-text p { margin: 8px 0 0; font-size: 28px; line-height: 1.5; }
+.sz-dialog-back { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(15, 17, 17, 0.55); animation: fade-in .2s ease both; }
+.sz-dialog-back.sz-top { z-index: 60; }
+.sz-dialog { max-width: 1100px; min-width: 700px; max-height: 88%; display: flex; flex-direction: column; align-items: center; gap: 18px; background: #fff; border-radius: 18px; padding: 36px 50px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); animation: pop-in .25s ease both; }
+.sz-dialog h2 { margin: 0; font-size: 42px; }
+.sz-dialog p { margin: 0; font-size: 32px; }
+.sz-dialog.sz-wide { width: 1200px; }
+.sz-searched { width: 100%; overflow: auto; }
+.sz-problem-img { max-width: 100%; max-height: 380px; border-radius: 10px; }
+.sz-problem-img.placeholder { width: 640px; height: 320px; background: #eee; color: #aaa; }
+.sz-order-items { margin: 0; padding: 0; list-style: none; font-size: 34px; font-weight: 700; text-align: center; }
+.sz-answer { display: flex; gap: 16px; }
+.sz-answer input { font: inherit; font-size: 34px; padding: 10px 20px; width: 360px; border: 2px solid #888c8c; border-radius: 10px; user-select: text; }
+.sz-wrong { font-size: 28px; font-weight: 700; color: #b12704; animation: shake .35s ease; }
+.sz-correct { font-size: 80px !important; color: #067d62; padding: 30px 60px; }
+@keyframes shake { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+.jump-grid { display: flex; flex-direction: column; gap: 12px; }
+.jump-row { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 900; }
+.jump-row span { width: 280px; }
+.jump-row button { flex: 1; font-size: 32px; padding: 12px 0; }
+
+/* 隠しメニューのボタンは全部グレー */
+.modal button { --edge: #1c1c1f; background: var(--charcoal); }
+
+.santazon .sz-top-btn { margin-left: auto; font-size: 28px; padding: 12px 30px; }
+
+.santazon, .sz-dialog-back { font-weight: 400; }
+.santazon .sz-logo { font-weight: 700; letter-spacing: -.01em; }
+
+/* クリア後の「次に進む」ボタン（赤いパネルの上なので白） */
+button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #8f0d22; background: var(--red); color: #fff; font-size: 34px; padding: 10px 44px; animation: pop-in .3s ease both; }
+
+
+/* ステージ1：マーク当てゲーム。丸模様は出さず、ぼかしたキービジュアルを半透明で敷く */
+.mark-game { justify-content: flex-end; gap: 0; padding: 0 0 180px; overflow: hidden; background: var(--bg); }
+.mark-bg {
+  position: absolute; left: -24px; top: -24px; width: calc(100% + 48px); height: calc(100% + 48px); z-index: 0;
+  object-fit: cover; object-position: center top; filter: blur(8px); opacity: 0.45; pointer-events: none;
+}
+.mark-body { position: relative; z-index: 1; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; padding: 48px 48px 12px; }
+.mark-speak { position: relative; z-index: 1; flex: none; width: 100%; display: flex; align-items: center; gap: 24px; padding: 0 40px; }
+.mark-speak-icon { width: 240px; height: 240px; flex: none; object-fit: contain; object-position: center bottom; background: none; border: 0; }
+.mark-speak-box { flex: 1; min-height: 240px; display: flex; align-items: center; margin: 0; padding: 28px 44px; background: #fff; border: 4px solid var(--charcoal); border-radius: 20px; font-family: 'Line', sans-serif; font-size: 42px; font-weight: 900; line-height: 1.45; animation: pop-in .35s ease both; }
+.mark-grid { display: flex; flex-direction: row; justify-content: center; align-items: flex-end; gap: 24px; }
+.mark-slot { display: flex; flex-direction: column; align-items: center; }
+.mark-score { height: 76px; font-size: 64px; font-weight: 900; line-height: 76px; color: var(--red); }
+.mark-btn { position: relative; display: flex; align-items: center; justify-content: center; width: 220px; height: 220px; padding: 0; font-size: 40px; color: var(--ink); background: #fff; border-radius: 24px; box-shadow: inset 0 0 0 4px #cfcfd4, 0 6px 0 #cfcfd4; }
+.mark-btn.is-selected { box-shadow: inset 0 0 0 8px var(--red), 0 6px 0 var(--red-dark); }
+.mark-btn.is-solved { background: #f7f7f8; }
+.mark-btn:disabled { opacity: 1; }
+.mark-symbol { font-size: 96px; line-height: 1; }
+.mark-pad { display: flex; flex-direction: column; align-items: stretch; gap: 14px; width: max-content; }
+.mark-input { height: 84px; display: flex; align-items: center; padding: 0 28px; background: #fff; border-radius: 20px; box-shadow: inset 0 0 0 4px var(--charcoal); font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: .06em; }
+.mark-keypad { display: flex; flex-direction: row; align-items: center; gap: 16px; }
+.key-row { display: flex; gap: 8px; }
+.key-row.digits .key-btn { --edge: var(--key-edge); width: 84px; height: 84px; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; color: var(--ink); background: var(--key); box-shadow: 0 5px 0 var(--key-edge); }
+.key-row.digits .key-btn:nth-child(1) { --key: #ffd0e0; --key-edge: #e89aaf; }
+.key-row.digits .key-btn:nth-child(2) { --key: #ffe0c2; --key-edge: #e0a56e; }
+.key-row.digits .key-btn:nth-child(3) { --key: #fff3b0; --key-edge: #d4b84a; }
+.key-row.digits .key-btn:nth-child(4) { --key: #d8f5c8; --key-edge: #8ec97a; }
+.key-row.digits .key-btn:nth-child(5) { --key: #c8efff; --key-edge: #6eb4d8; }
+.key-row.digits .key-btn:nth-child(6) { --key: #ddd0ff; --key-edge: #a48ad4; }
+.key-row.digits .key-btn:nth-child(7) { --key: #ffd0f0; --key-edge: #d47ab0; }
+.key-row.digits .key-btn:nth-child(8) { --key: #c8fff0; --key-edge: #62c8a8; }
+.key-row.digits .key-btn:nth-child(9) { --key: #ffe0d4; --key-edge: #e09880; }
+.key-row.digits .key-btn:nth-child(10) { --key: #e8d4ff; --key-edge: #b088d4; }
+.key-row.digits .key-btn:active { box-shadow: 0 0 0 var(--key-edge); }
+.key-row.actions .key-btn { width: 148px; height: 84px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; line-height: 1; }
+.key-btn { height: 80px; font-size: 48px; font-weight: 900; color: var(--ink); background: #fff; border-radius: 16px; box-shadow: inset 0 0 0 3px #cfcfd4, 0 5px 0 #cfcfd4; }
+.key-btn:active { box-shadow: inset 0 0 0 3px #cfcfd4; transform: translateY(3px); }
+.key-btn.is-del { font-size: 32px; color: var(--ink-sub); background: #fff; box-shadow: inset 0 0 0 3px #cfcfd4, 0 5px 0 #cfcfd4; }
+.key-btn.is-ok, .key-btn.is-ok:disabled, .key-btn.is-ok:disabled:active { color: #fff; background: var(--red); box-shadow: 0 5px 0 var(--red-dark); }
+.key-btn.is-ok:disabled { opacity: .4; }
+.key-btn:disabled { background: #e4e4e7; color: #9a9aa0; box-shadow: 0 5px 0 #cfcfd4; }

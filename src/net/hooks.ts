@@ -11,7 +11,11 @@ export function usePresence(identity: Identity) {
     const beat = () => b.set('presence', key, { lastSeen: Date.now() }).catch(() => {})
     beat()
     const t = setInterval(beat, HEARTBEAT_MS)
-    return () => clearInterval(t)
+    return () => {
+      clearInterval(t)
+      // 役割選択に戻ったとき「起動中」が残らないよう、すぐに切断扱いにする
+      b.set('presence', key, { lastSeen: 0 }).catch(() => {})
+    }
   }, [identity.role, identity.id])
 }
 

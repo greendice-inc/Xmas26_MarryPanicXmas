@@ -1,4 +1,3 @@
-import { GAME_COUNT } from './config'
 
 export type Role = 'master' | 'staff' | 'player' | 'keybox'
 
@@ -16,7 +15,22 @@ export interface PresenceDoc {
   lastSeen: number
 }
 
-export type Phase = 'novel' | 'game' | 'end'
+/** novel=会話 / game=ゲーム / clear=クリア後のお礼 / end=エンディング */
+export type Phase = 'novel' | 'game' | 'clear' | 'end'
+
+export interface OrderItem {
+  id: string
+  qty: number
+}
+
+/** ordered=スタッフの準備待ち / delivered=届いた（問題を解いている最中） / solved=正解 */
+export type OrderStatus = 'ordered' | 'delivered' | 'solved'
+
+export interface Order {
+  items: OrderItem[]
+  status: OrderStatus
+  at: number
+}
 
 export interface TeamDoc {
   started: boolean
@@ -26,6 +40,16 @@ export interface TeamDoc {
   phase: Phase
   /** true = メインビジュアルのフタをかけている */
   locked: boolean
+  /** マスターが全端末をリセットした時刻（変化したらプレイヤーは最初の画面へ戻る） */
+  resetAt?: number
+  /** シーンジャンプした時刻（変化したらプレイヤーは画面に入る） */
+  enterAt?: number
+  /** Santazon の注文（なければ null） */
+  order: Order | null
+  /** これまでに注文した数（在庫の計算用） */
+  orderedQty: OrderItem[]
+  /** 詳細検索で調べた商品の id */
+  searched: string[]
   updatedAt: number
 }
 
@@ -35,6 +59,9 @@ export const DEFAULT_TEAM: TeamDoc = {
   stage: 1,
   phase: 'novel',
   locked: true,
+  order: null,
+  orderedQty: [],
+  searched: [],
   updatedAt: 0,
 }
 
@@ -42,5 +69,5 @@ export const DEFAULT_TEAM: TeamDoc = {
 export function progressLabel(t: TeamDoc): string {
   if (!t.started) return '未開始'
   if (t.phase === 'end') return 'LAST'
-  return `${Math.min(t.stage, GAME_COUNT)}-${t.phase === 'novel' ? 'N' : 'G'}`
+  return `${t.stage}-${t.phase === 'novel' ? 'N' : t.phase === 'game' ? 'G' : 'C'}`
 }
