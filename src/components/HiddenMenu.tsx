@@ -16,10 +16,12 @@ interface Props {
   locked?: boolean
   /** true のときフルスクリーン切り替えボタンを表示 */
   fullscreenToggle?: boolean
+  /** 正解直後の30秒待ちのときだけ。押すとその待ちを飛ばす */
+  onSkipWait?: () => void
 }
 
 /** 画面左上を連続タップするとメニューが出る（トップ画面以外で配置する） */
-export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, locked, fullscreenToggle }: Props) {
+export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, locked, fullscreenToggle, onSkipWait }: Props) {
   const taps = useRef<number[]>([])
   const [open, setOpen] = useState(false)
   const [jumping, setJumping] = useState(false)
@@ -105,6 +107,16 @@ export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, loc
               </button>
             )}
             {onJump && <button onClick={() => setJumping(true)}>シーンジャンプ</button>}
+            {onSkipWait && (
+              <button
+                onClick={() => {
+                  setOpen(false)
+                  onSkipWait()
+                }}
+              >
+                30秒をスキップ
+              </button>
+            )}
             {fullscreenToggle && (
               <button onClick={toggleFullscreen}>{isFull ? 'フルスクリーン解除' : 'フルスクリーンにする'}</button>
             )}

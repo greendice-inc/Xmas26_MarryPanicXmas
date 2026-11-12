@@ -5,8 +5,25 @@ import TwoTapButton from '../components/TwoTapButton'
 import { TEAM_COUNT } from '../config'
 import { getBackend } from '../net'
 import { isOnline, useNow, usePresenceAll, useTeamsAll } from '../net/hooks'
+import { isGame1LoseCart } from '../santazon/products'
 import { useProducts } from '../santazon/useProducts'
 import { DEFAULT_TEAM, progressLabel } from '../types'
+
+/** 進捗の見た目。ステージが揃うまでは、全チーム同じ飾り */
+const PROGRESS_NODES = ['lg', 'sm', 'sm', 'lg'] as const
+
+function ProgressOrnament() {
+  return (
+    <div className="progress-track" aria-hidden>
+      {PROGRESS_NODES.map((size, i) => (
+        <span key={i} className="progress-step">
+          <i className={`progress-node is-${size}`} />
+          <i className="progress-bar" />
+        </span>
+      ))}
+    </div>
+  )
+}
 
 export default function StaffScreen() {
   const { products } = useProducts()
@@ -59,28 +76,60 @@ export default function StaffScreen() {
       <div className="staff-list">
         {teamNos.map((n) => {
           const t = teamDoc(n)
+          const order = t.order
+          const holding = !!order?.stayed
+          const canHold =
+            t.stage === 1 &&
+            t.phase === 'game' &&
+            !!order &&
+            order.status === 'solved' &&
+            isGame1LoseCart(order.items)
+          const remain =
+            canHold && order.proceedAt != null
+              ? Math.max(0, Math.ceil((order.proceedAt - now) / 1000))
+              : null
           return (
             <div className={`staff-row ${t.locked ? 'is-locked' : 'is-open'}`} key={n}>
-              <div className="staff-row-main">
-                <ConnDot on={isOnline(presence[`player-${n}`], now)} />
-                <div className="team-no">チーム {n}</div>
-                <div className="room">{t.room ? `部屋 ${t.room}` : '—'}</div>
-                <div className="progress">{progressLabel(t)}</div>
-                <div className={`lock-state ${t.locked ? 'locked' : 'open'}`}>{t.locked ? 'ロック中' : '解除中'}</div>
+              <div className="staff-row-body">
+                <div className="staff-row-main">
+                  <ConnDot on={isOnline(presence[`player-${n}`], now)} />
+                  <div className="team-no">チーム {n}</div>
+                  <div className="progress">{progressLabel(t)}</div>
+                  {t.order ? (
+                    <>
+                      <span className={`order-status ${t.order.status}`}>
+                        {t.order.status === 'delivered' ? '解答中' : t.order.status === 'solved' ? '正解！' : '注文あり'}
+                      </span>
+                      <span className="order-items">
+                        {t.order.items.map((i) => `${products.find((p) => p.id === i.id)?.name ?? i.id}×${i.qty}`).join('、')}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="order-none">注文なし</span>
+                  )}
+                </div>
+                <ProgressOrnament />
               </div>
-              <div className="staff-order">
-                {t.order ? (
-                  <>
-                    <span className={`order-status ${t.order.status}`}>
-                      {t.order.status === 'delivered' ? '解答中' : t.order.status === 'solved' ? '正解！' : '注文あり'}
-                    </span>
-                    <span className="order-items">
-                      {t.order.items.map((i) => `${products.find((p) => p.id === i.id)?.name ?? i.id}×${i.qty}`).join('、')}
-                    </span>
-                  </>
-                ) : (
-                  <span className="order-none">注文なし</span>
-                )}
+              <div className="staff-row-side">
+                <div className={`lock-state ${t.locked ? 'locked' : 'open'}`}>{t.locked ? 'ロック中' : '解除中'}</div>
+                <div className="stay-row">
+                {remain != null && <div className={`stay-count${holding ? ' is-held' : ''}`}>{remain}秒</div>}
+                <button
+                  className="order-ready"
+                  disabled={!canHold}
+                  onClick={() => {
+                    if (!order) return
+                    getBackend()
+                      .set('teams', String(n), {
+                        order: { ...order, stayed: !holding },
+                        updatedAt: Date.now(),
+                      })
+                      .catch(() => {})
+                  }}
+                >
+                  {holding ? '再開' : 'ステイ'}
+                </button>
+                </div>
               </div>
             </div>
           )

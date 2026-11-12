@@ -9,13 +9,15 @@ export interface ProductInput {
   category: CategoryKey
   name: string
   code: string
+  /** 分母 */
   stock: number
+  /** 分子。今ある数 */
+  available: number
   listed: boolean
   description: string
   /** 空なら画像なし。データURL */
   image: string
   note: string
-  emoji?: string
 }
 
 interface Stored {
@@ -24,11 +26,11 @@ interface Stored {
   name?: string
   code?: string
   stock?: number
+  available?: number
   listed?: boolean
   description?: string
   image?: string
   note?: string
-  emoji?: string
   updatedAt?: number
 }
 
@@ -48,19 +50,26 @@ function isCategory(v: unknown): v is CategoryKey {
   return CATEGORIES.some((c) => c.key === v)
 }
 
+function whole(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v !== '' ? Number(v) : NaN
+  return Number.isInteger(n) && n >= 0 ? n : null
+}
+
 function toProduct(id: string, d: Stored): Product | null {
   if (!isCategory(d.category) || !d.name) return null
+  const stock = whole(d.stock) ?? 0
   return {
     id,
     category: d.category,
     name: d.name,
     code: String(d.code ?? '').replace(/\D/g, ''),
-    stock: Number(d.stock) || 0,
+    stock,
+    // 分子が未設定の古い商品は、これまで通り分母と同じ数から始める
+    available: d.available == null ? stock : (whole(d.available) ?? 0),
     listed: !!d.listed,
     description: d.description ?? '',
     image: d.image || undefined,
     note: d.note ?? '',
-    emoji: d.emoji || '🎁',
   }
 }
 
@@ -103,17 +112,16 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   const save = async (id: string | null, input: ProductInput) => {
     const docId = id ?? `item-${Date.now().toString(36)}`
-    const prev = id ? stored.find((p) => p.id === id) : undefined
     await getBackend().set(COL, docId, {
       category: input.category,
       name: input.name.trim(),
       code: input.code,
       stock: input.stock,
+      available: input.available,
       listed: input.listed,
       description: input.description.trim(),
       image: input.image,
       note: input.note.trim(),
-      emoji: input.emoji || prev?.emoji || '🎁',
       updatedAt: Date.now(),
     })
   }
@@ -129,11 +137,11 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         name: p.name,
         code: p.code,
         stock: p.stock,
+        available: p.available,
         listed: p.listed,
         description: p.description,
         image: p.image ?? '',
         note: p.note ?? '',
-        emoji: p.emoji,
         updatedAt: Date.now(),
       })
     }

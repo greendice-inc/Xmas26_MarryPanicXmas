@@ -5,24 +5,32 @@ export default function GameMenu({
   shopOpen,
   onOrder,
   onTask,
-  highlightOrder,
+  locked,
 }: {
   shopOpen: boolean
   onOrder: () => void
   onTask?: () => void
-  highlightOrder?: boolean
+  /** 会話中はテキスト送り以外を受け付けない */
+  locked?: boolean
 }) {
+  const action = (label: (typeof ITEMS)[number]) =>
+    label === '注文' ? onOrder : label === 'やるべきこと' ? onTask : undefined
+
   return (
-    <nav className="game-menu">
-      {ITEMS.map((label) => (
-        <button
-          key={label}
-          className={`sub${label === '注文' && shopOpen ? ' on' : ''}${label === '注文' && highlightOrder ? ' is-hot' : ''}`}
-          onClick={label === '注文' ? onOrder : label === 'やるべきこと' ? onTask : undefined}
-        >
-          {label}
-        </button>
-      ))}
+    <nav className={`game-menu${locked ? ' is-locked' : ''}`}>
+      {ITEMS.map((label) => {
+        const onClick = action(label)
+        return (
+          <button
+            key={label}
+            className={`sub${label === '注文' && shopOpen ? ' on' : ''}`}
+            disabled={!!locked || !onClick}
+            onClick={onClick}
+          >
+            {label}
+          </button>
+        )
+      })}
     </nav>
   )
 }

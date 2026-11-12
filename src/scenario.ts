@@ -21,8 +21,6 @@ export interface NovelLine {
   character?: string
   /** 台詞の代わりに、画面の中央へフェードインさせる表示 */
   banner?: string
-  /** この台詞のあいだ、タブレットの注文ボタンを光らせる */
-  highlight?: 'order'
 }
 
 /** キャラクター画像のパス。folder は public/character 配下の 'Stage1'（prefix は st1）や 'Common'（案内役のエルフ、prefix は elf） */
@@ -76,7 +74,7 @@ export const ENDING: NovelScene = {
   ],
 }
 
-/** マーク当てが終わったあとの、エルフと子供の会話 */
+/** ステージ1の導入のあとの、エルフと子供の会話 */
 const STAGE1_CLEAR: NovelScene = {
   character: 'Stage1',
   background: 'Stage1',
@@ -107,7 +105,6 @@ const STAGE1_CLEAR: NovelScene = {
       character: 'Common',
       text: 'タブレットの左下にある注文ボタンを押すとSantazonのページを開くことができます。',
       emotion: '真顔',
-      highlight: 'order',
     },
     {
       speaker: 'エルフ',
@@ -118,7 +115,13 @@ const STAGE1_CLEAR: NovelScene = {
     {
       speaker: 'エルフ',
       character: 'Common',
-      text: '宅配ソックスの番号は、注文した後に出てくる謎を解くとわかるようになってます！詳しい説明はSantazonページのSantazonの使い方。ボタンを押してみてください。',
+      text: '宅配ソックスの番号は、注文した後に出てくる謎を解くとわかるようになってます！',
+      emotion: '真顔',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: '詳しい説明はSantazonページのSantazonの使い方。ボタンを押してみてください。',
       emotion: '真顔',
     },
     {

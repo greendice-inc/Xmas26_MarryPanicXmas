@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import Santazon from '../components/Santazon'
+import Stage from '../components/Stage'
+import { GAME_COUNT } from '../config'
 import { CATEGORIES, formatCode, type CategoryKey } from '../santazon/products'
 import { useProducts, type ProductInput } from '../santazon/useProducts'
+import { DEFAULT_TEAM, type OrderItem, type TeamDoc } from '../types'
 
 const EMPTY_DIGITS = ['', '', '', '']
 
@@ -47,16 +51,19 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
   const [category, setCategory] = useState<CategoryKey>('game1')
   const [name, setName] = useState('')
   const [digits, setDigits] = useState<string[]>(EMPTY_DIGITS)
+  const [stockHave, setStockHave] = useState('1')
   const [stock, setStock] = useState('1')
   const [listed, setListed] = useState(true)
   const [description, setDescription] = useState('')
   const [note, setNote] = useState('')
   const [image, setImage] = useState('')
-  const [emoji, setEmoji] = useState('🎁')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [shop, setShop] = useState(false)
+  const [preview, setPreview] = useState<TeamDoc>(DEFAULT_TEAM)
+  const [cart, setCart] = useState<OrderItem[]>([])
   const imported = useRef(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -76,12 +83,12 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
     setCategory('game1')
     setName('')
     setDigits(EMPTY_DIGITS)
+    setStockHave('1')
     setStock('1')
     setListed(true)
     setDescription('')
     setNote('')
     setImage('')
-    setEmoji('🎁')
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -92,12 +99,12 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
     setCategory(p.category)
     setName(p.name)
     setDigits([...p.code.padEnd(4, ' ').slice(0, 4)].map((c) => (/\d/.test(c) ? c : '')))
+    setStockHave(String(p.available))
     setStock(String(p.stock))
     setListed(p.listed)
     setDescription(p.description)
     setNote(p.note ?? '')
     setImage(p.image ?? '')
-    setEmoji(p.emoji)
     setError('')
     setMessage('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -128,20 +135,22 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
 
   const submit = async () => {
     const code = digits.join('')
+    const have = Number(stockHave)
     const qty = Number(stock)
     if (!name.trim()) return setError('商品名を入力してください')
     if (!/^\d{4}$/.test(code)) return setError('商品番号は4桁の数字です')
-    if (!Number.isInteger(qty) || qty < 0) return setError('在庫は0以上の整数です')
+    if (stockHave === '' || stock === '') return setError('在庫は 0/1 のように分子と分母を入力してください')
+    if (!Number.isInteger(have) || have < 0 || !Number.isInteger(qty) || qty < 0) return setError('在庫は0以上の整数です')
     const input: ProductInput = {
       category,
       name,
       code,
       stock: qty,
+      available: have,
       listed,
       description,
       image,
       note,
-      emoji,
     }
     setBusy(true)
     setError('')
@@ -158,14 +167,24 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
 
   const labelOf = (key: CategoryKey) => CATEGORIES.find((c) => c.key === key)?.label ?? key
 
+  const openShop = () => {
+    setPreview({ ...DEFAULT_TEAM, started: true, locked: false, stage: GAME_COUNT })
+    setCart([])
+    setShop(true)
+  }
+
   return (
+    <>
     <div className="catalog-page">
       <header className="catalog-header">
         <div>
           <h1>商品登録</h1>
           <p>登録すると Firestore が更新され、ゲームの Santazon にも反映されます。</p>
         </div>
-        <button className="catalog-back" onClick={onBack}>ゲームに戻る</button>
+        <div className="catalog-header-actions">
+          <button className="catalog-shop-open" onClick={openShop}>Santazonを開く</button>
+          <button className="catalog-back" onClick={onBack}>ゲームに戻る</button>
+        </div>
       </header>
 
       <div className="catalog-layout">
@@ -208,10 +227,25 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <label>
-            在庫
-            <input inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value.replace(/\D/g, ''))} />
-          </label>
+          <div className="catalog-field">
+            <span>在庫</span>
+            <div className="catalog-stock">
+              <input
+                inputMode="numeric"
+                aria-label="分子"
+                value={stockHave}
+                onChange={(e) => setStockHave(e.target.value.replace(/\D/g, ''))}
+              />
+              <i>/</i>
+              <input
+                inputMode="numeric"
+                aria-label="分母"
+                value={stock}
+                onChange={(e) => setStock(e.target.value.replace(/\D/g, ''))}
+              />
+            </div>
+            <small>左が今ある数、右が全体です。0/1 のように表示されます。</small>
+          </div>
 
           <div className="catalog-field">
             <span>リスト掲載</span>
@@ -219,7 +253,7 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
               <label><input type="radio" checked={listed} onChange={() => setListed(true)} />あり</label>
               <label><input type="radio" checked={!listed} onChange={() => setListed(false)} />なし</label>
             </div>
-            <small>なしの商品は一覧に出ません。詳細検索すると、検索済みリストに追加されます。</small>
+            <small>なしの商品は一覧に出ません。リスト追加検索すると、検索済みリストに追加されます。</small>
           </div>
 
           <label>
@@ -258,12 +292,14 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
           {loaded && stored.length === 0 && <p>まだ商品がありません。</p>}
           {stored.map((p) => (
             <article key={p.id} className="catalog-row">
-              <div className="catalog-thumb">
-                {p.image ? <img src={p.image} alt="" /> : <span>なし</span>}
-              </div>
+              {p.image && (
+                <div className="catalog-thumb">
+                  <img src={p.image} alt="" />
+                </div>
+              )}
               <div className="catalog-row-text">
                 <strong>{p.name}</strong>
-                <span>{labelOf(p.category)}　{formatCode(p.code) || '番号なし'}　在庫 {p.stock}　{p.listed ? '掲載あり' : '掲載なし'}</span>
+                <span>{labelOf(p.category)}　{formatCode(p.code) || '番号なし'}　在庫 {p.available}/{p.stock}　{p.listed ? '掲載あり' : '掲載なし'}</span>
                 {p.note && <span className="catalog-note">備考：{p.note}</span>}
               </div>
               <button type="button" onClick={() => edit(p.id)}>編集</button>
@@ -287,5 +323,19 @@ export default function CatalogScreen({ onBack }: { onBack: () => void }) {
         </section>
       </div>
     </div>
+    {shop && (
+      <div className="catalog-shop">
+        <Stage>
+          <Santazon
+            doc={preview}
+            update={(patch) => setPreview((d) => ({ ...d, ...patch }))}
+            cart={cart}
+            setCart={setCart}
+            onClose={() => setShop(false)}
+          />
+        </Stage>
+      </div>
+    )}
+    </>
   )
 }

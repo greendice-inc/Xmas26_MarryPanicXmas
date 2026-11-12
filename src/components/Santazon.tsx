@@ -8,6 +8,7 @@ import {
   type Product,
 } from '../santazon/products'
 import { useProducts } from '../santazon/useProducts'
+import { characterImage } from '../scenario'
 import type { OrderItem, TeamDoc } from '../types'
 
 interface Props {
@@ -19,7 +20,8 @@ interface Props {
 }
 
 function ProductImage({ p }: { p: Product }) {
-  return p.image ? <img src={p.image} alt="" /> : <span className="sz-emoji">{p.emoji}</span>
+  if (!p.image) return null
+  return <img src={p.image} alt="" />
 }
 
 /** 注文画面「Santazon」。見た目はネット通販サイト風 */
@@ -31,6 +33,8 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
   const [showSearched, setShowSearched] = useState(false)
   const [detail, setDetail] = useState<Product | null>(null)
   const [help, setHelp] = useState(false)
+  const [rejected, setRejected] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
 
   // 届く途中・解答中は新しい注文ができない。考え直す注文と、解き終わった注文は入れ直せる
   const ordering = !!doc.order && (doc.order.status === 'ordered' || doc.order.status === 'delivered')
@@ -38,7 +42,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
   const full = cartCount >= MAX_CART
 
   const remaining = (p: Product) =>
-    p.stock -
+    p.available -
     (doc.orderedQty.find((i) => i.id === p.id)?.qty ?? 0) -
     (cart.find((i) => i.id === p.id)?.qty ?? 0)
 
@@ -63,15 +67,24 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
         else orderedQty.push({ ...c })
       })
       update({ order: { items: cart, status: 'ordered', at: Date.now() }, orderedQty: orderedQty.map((o) => ({ ...o })) })
+      setCart(() => [])
+      setConfirmed(true)
     } else {
       update({ order: { items: cart, status: 'wrong', at: Date.now() } })
+      setRejected(true)
     }
-    setCart(() => [])
-    onClose()
   }
 
-  const listed = products.filter((p) => p.category === category && p.listed)
+  // ステージが進むほど、その番号までのゲーム用アイテムが選べる
+  const openCategories = CATEGORIES.slice(0, Math.min(CATEGORIES.length, Math.max(1, doc.stage)))
+  const selected = openCategories.some((c) => c.key === category) ? category : openCategories[0].key
+  const listed = products.filter((p) => p.category === selected && p.listed)
   const searchedProducts = doc.searched.map(productById).filter((p): p is Product => !!p)
+  const rows = showSearched ? searchedProducts : listed
+  const openSearched = () => {
+    setTab('list')
+    setShowSearched(true)
+  }
 
   return (
     <div className="santazon">
@@ -84,7 +97,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
         <div className="sz-logo">Santazon</div>
         <nav className="sz-tabs">
           <button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>リスト</button>
-          <button className={tab === 'search' ? 'on' : ''} onClick={() => setTab('search')}>詳細検索</button>
+          <button className={tab === 'search' ? 'on' : ''} onClick={() => setTab('search')}>リスト追加検索</button>
         </nav>
         <button className="sz-btn sz-yellow sz-help" onClick={() => setHelp(true)}>Santazonの使い方</button>
         <button className="sz-btn sz-yellow sz-top-btn" onClick={onClose}>トップに戻る</button>
@@ -95,18 +108,28 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
           {tab === 'list' ? (
             <>
               <div className="sz-toolbar">
-                <select value={category} onChange={(e) => setCategory(e.target.value as CategoryKey)}>
-                  {CATEGORIES.map((c) => (
+                <select
+                  value={selected}
+                  onChange={(e) => {
+                    setCategory(e.target.value as CategoryKey)
+                    setShowSearched(false)
+                  }}
+                >
+                  {openCategories.map((c) => (
                     <option key={c.key} value={c.key}>{c.label}</option>
                   ))}
                 </select>
-                <button className="sz-btn sz-light" onClick={() => setShowSearched(true)}>
+                <button className={`sz-btn sz-light${showSearched ? ' is-on' : ''}`} onClick={openSearched}>
                   検索済みリスト（{searchedProducts.length}）
                 </button>
               </div>
               <div className="sz-list">
-                {listed.length === 0 && <div className="sz-empty">このカテゴリに掲載中の商品はありません</div>}
-                {listed.map((p) => {
+                {rows.length === 0 && (
+                  <div className="sz-empty">
+                    {showSearched ? 'まだ検索した商品はありません' : 'このカテゴリに掲載中の商品はありません'}
+                  </div>
+                )}
+                {rows.map((p) => {
                   const left = remaining(p)
                   const soldOut = left <= 0
                   return (
@@ -117,7 +140,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
                       <button className="sz-btn sz-yellow" disabled={soldOut || full || ordering} onClick={() => add(p)}>
                         カートに追加
                       </button>
-                      <div className="sz-stock">在庫数：{left}/{p.stock}</div>
+                      <div className="sz-stock">在庫数：{Math.max(0, left)}/{p.stock}</div>
                     </div>
                   )
                 })}
@@ -131,7 +154,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
                 const add = ids.filter((id) => !doc.searched.includes(id))
                 if (add.length) update({ searched: [...doc.searched, ...add] })
               }}
-              onOpenSearched={() => setShowSearched(true)}
+              onOpenSearched={openSearched}
             />
           )}
         </main>
@@ -146,7 +169,6 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
               if (!p) return null
               return (
                 <div className="sz-cart-item" key={i.id}>
-                  <span className="sz-cart-emoji">{p.emoji}</span>
                   <div className="sz-cart-info">
                     <div className="sz-name">{p.name} × {i.qty}</div>
                   </div>
@@ -164,27 +186,14 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
         </aside>
       </div>
 
-      {showSearched && (
-        <div className="sz-dialog-back" onClick={() => setShowSearched(false)}>
-          <div className="sz-dialog sz-wide" onClick={(e) => e.stopPropagation()}>
-            <h2>検索済みリスト</h2>
-            <div className="sz-searched">
-              {searchedProducts.length === 0 && <div className="sz-empty">まだ検索した商品はありません</div>}
-              {searchedProducts.map((p) => (
-                <ProductDetail p={p} key={p.id} />
-              ))}
-            </div>
-            <button className="sz-btn sz-yellow" onClick={() => setShowSearched(false)}>閉じる</button>
-          </div>
-        </div>
-      )}
-
       {detail && (
         <div className="sz-dialog-back" onClick={() => setDetail(null)}>
           <div className="sz-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="sz-thumb sz-thumb-lg">
-              <ProductImage p={detail} />
-            </div>
+            {detail.image && (
+              <div className="sz-thumb sz-thumb-lg">
+                <ProductImage p={detail} />
+              </div>
+            )}
             <h2>{detail.name}</h2>
             <p>{detail.description || '詳しい説明は準備中です。'}</p>
             <button className="sz-btn sz-yellow" onClick={() => setDetail(null)}>閉じる</button>
@@ -202,6 +211,27 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
           </div>
         </div>
       )}
+
+      {rejected && (
+        <div className="sz-elf-back" onClick={() => setRejected(false)}>
+          <div className="sz-elf-line">
+            <img src={characterImage('Common', '真顔')} alt="" />
+            <p>
+              <span>エルフ</span>
+              注文するものをもう一度考えた方がよさそうだね。
+            </p>
+          </div>
+        </div>
+      )}
+
+      {confirmed && (
+        <div className="sz-dialog-back" onClick={() => setConfirmed(false)}>
+          <div className="sz-dialog" onClick={(e) => e.stopPropagation()}>
+            <p>注文が確定しました。商品が届くまでしばらくお待ちください。</p>
+            <button className="sz-btn sz-yellow" onClick={() => setConfirmed(false)}>閉じる</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -209,12 +239,14 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
 function ProductDetail({ p }: { p: Product }) {
   return (
     <div className="sz-detail">
-      <div className="sz-thumb sz-thumb-lg">
-        <ProductImage p={p} />
-      </div>
+      {p.image && (
+        <div className="sz-thumb sz-thumb-lg">
+          <ProductImage p={p} />
+        </div>
+      )}
       <div className="sz-detail-text">
         <div className="sz-name sz-name-lg">{p.name}</div>
-        <div className="sz-code">詳細検索番号：{formatCode(p.code)}</div>
+        <div className="sz-code">リスト追加検索番号：{formatCode(p.code)}</div>
         <p>{p.description || '詳しい説明は準備中です。'}</p>
       </div>
     </div>

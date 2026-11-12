@@ -14,9 +14,10 @@ type Spot = (typeof SPOTS)[number]
 const VIEW_W = 1100
 const VIEW_H = 740
 
-/** ステージ1クリア後の子供部屋。▼の場所をタップすると、そのあたりを中央に拡大する */
+/** 特定のあとの子供部屋。決めた場所をタップすると、そのあたりを中央に拡大する */
 export default function KidsRoom() {
   const [spot, setSpot] = useState<Spot | null>(null)
+  const debug = new URLSearchParams(location.search).get('debug') === 'true'
 
   return (
     <div className="kids-room">
@@ -24,13 +25,11 @@ export default function KidsRoom() {
       {SPOTS.map((s) => (
         <button
           key={s.id}
-          className="room-spot"
+          className={`room-spot${debug ? ' is-debug' : ''}`}
           style={{ left: `${s.x}%`, top: `${s.y}%` }}
           aria-label="拡大する"
           onClick={() => setSpot(s)}
-        >
-          ▼
-        </button>
+        />
       ))}
       {spot && (
         <div className="room-zoom-back" onClick={() => setSpot(null)}>

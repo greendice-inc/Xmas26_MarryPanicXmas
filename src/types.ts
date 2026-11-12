@@ -30,6 +30,10 @@ export interface Order {
   items: OrderItem[]
   status: OrderStatus
   at: number
+  /** 正解のあと、次に進む画面へ切り替えてよい時刻 */
+  proceedAt?: number
+  /** ステイ中。カウントは進むが、次へ進む画面には自動で切り替わらない */
+  stayed?: boolean
 }
 
 export interface TeamDoc {
@@ -48,9 +52,9 @@ export interface TeamDoc {
   order: Order | null
   /** これまでに注文した数（在庫の計算用） */
   orderedQty: OrderItem[]
-  /** 詳細検索で調べた商品の id */
+  /** リスト追加検索で調べた商品の id */
   searched: string[]
-  /** ステージ1のマーク当てが終わり、子供部屋を見ている */
+  /** ステージ1のクリア会話が終わり、子供部屋を見ている */
   markCleared: boolean
   updatedAt: number
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import HiddenMenu from './components/HiddenMenu'
 import Stage from './components/Stage'
 import { ROOM_BY_TEAM } from './config'
+import { game1OrderedQty } from './santazon/products'
 import { useTeam, usePresence } from './net/hooks'
 import { getBackend } from './net/index'
 import { ProductsProvider } from './santazon/useProducts'
@@ -11,6 +12,7 @@ import MasterScreen from './screens/MasterScreen'
 import PlayerScreen from './screens/PlayerScreen'
 import StaffScreen from './screens/StaffScreen'
 import TopScreen from './screens/TopScreen'
+import { useAdultSkip } from './adultWait'
 import type { Identity } from './types'
 
 /** 開発用の商品登録は ?debug=true のときだけ開く */
@@ -42,26 +44,33 @@ function Session({ identity }: { identity: Identity }) {
 /** プレイヤー端末の隠しメニュー。チームの状態を見て、ロック解除の表示を決める */
 function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onReset: () => void; onReconnect: () => void }) {
   const [doc] = useTeam(team)
+  const skipWait = useAdultSkip()
   return (
     <HiddenMenu
       onReset={onReset}
       onReconnect={onReconnect}
+      onSkipWait={skipWait ?? undefined}
       fullscreenToggle
       locked={doc.locked}
-      onJump={(stage, phase) =>
+      onJump={(stage, phase) => {
+        // ステージ1の注文は子供部屋で行う。それより後のシーンでは、正しい3点がすでに消費されている
+        const pastStage1 = phase === 'end' || stage > 1
         getBackend()
           .set('teams', String(team), {
             started: true,
             room: ROOM_BY_TEAM[team] ?? team,
             stage,
             phase,
+            locked: false,
+            order: null,
+            orderedQty: pastStage1 ? game1OrderedQty() : [],
+            searched: [],
             markCleared: false,
-            // 待機画面にいても中に入れるようにする
             enterAt: Date.now(),
             updatedAt: Date.now(),
           })
           .catch(() => {})
-      }
+      }}
       onUnlock={() => getBackend().set('teams', String(team), { locked: false, updatedAt: Date.now() }).catch(() => {})}
     />
   )
