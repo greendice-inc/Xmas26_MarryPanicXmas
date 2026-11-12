@@ -105,8 +105,8 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 /* ---------- トップ ---------- */
 .top { display: flex; flex-direction: column; gap: 28px; background: #fff; }
 .top-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; gap: 24px; }
-button.catalog-link { flex: none; font-size: 28px; padding: 10px 22px; }
-.top-lead { font-size: 34px; color: var(--ink-sub); }
+button.catalog-link { flex: none; font-size: 32px; padding: 16px 40px; }
+.top-lead { margin-left: auto; font-size: 34px; color: var(--ink-sub); }
 .top-cards { display: grid; grid-template-columns: 1fr; gap: 28px; }
 .tile-row { display: flex; gap: 24px; }
 .tile-row .tile { flex: 1; }
