@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { characterImage, type Emotion, type NovelLine, type NovelScene } from '../scenario'
+import { backgroundImage, characterImage, type Emotion, type NovelLine, type NovelScene } from '../scenario'
 
 const CHAR_MS = 50
 /** 登場演出（キャラが下からせり上がる → パネルが出る）の長さ。この後に台詞が出始める */
@@ -140,7 +140,11 @@ export default function NovelPart({
 
   return (
     <div className={`novel${skip ? ' skip' : ''}`} style={{ ['--lead' as string]: `${leadMs}ms` }} onClick={next}>
-      <div className="novel-bg" />
+      {scene.background ? (
+        <img className="novel-bg" src={backgroundImage(scene.background)} alt="" />
+      ) : (
+        <div className="novel-bg placeholder">背景画像</div>
+      )}
 
       {line.banner ? (
         <div className="points-banner">

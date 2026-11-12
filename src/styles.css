@@ -34,7 +34,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-html, body, #root { margin: 0; height: 100%; overflow: hidden; background: var(--bg); touch-action: manipulation; }
+html, body, #root { margin: 0; height: 100%; overflow: hidden; background: #000; touch-action: manipulation; }
 body {
   font-family: 'Other', sans-serif;
   font-weight: 700;
@@ -42,7 +42,7 @@ body {
 }
 h1, h2 { margin: 0; }
 
-.viewport { position: fixed; inset: 0; background: var(--bg); }
+.viewport { position: fixed; inset: 0; background: #000; }
 .stage { position: absolute; transform-origin: top left; background: var(--bg); overflow: hidden; }
 
 .screen {
@@ -209,12 +209,13 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 /* メインビジュアルのフタ */
 .cover {
   position: absolute; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 56px;
-  background: var(--bg); animation: fade-in .4s ease both;
+  background: #fff; animation: fade-in .4s ease both;
 }
 .cover .logo { font-size: 110px; --ring: 12px; --ring-in: 7px; }
 .cover-sub { font-size: 44px; color: var(--ink-sub); }
-/* KV：切り抜かずに全体を見せる。はみ出す上下は地の単色 */
+/* KV：切り抜かずに全体を見せる（画像下端の黒い書き出し余白は隠す）。余った上下は、同じ絵をぼかして敷く */
 .cover { overflow: hidden; }
+.cover-kv-bg { position: absolute; left: -80px; top: -80px; width: calc(100% + 160px); height: calc(100% + 160px); object-fit: cover; filter: blur(40px) brightness(.7); }
 .cover-kv { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 2134 / 1152; object-fit: cover; object-position: top; transform: translateY(-50%); }
 
 /* 読み込み中のドット */
@@ -226,8 +227,9 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 
 /* ---------- ノベル ---------- */
 .novel { position: absolute; inset: 0; }
-.novel-bg { position: absolute; inset: 0; background: var(--bg); }
+.novel-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .placeholder { display: flex; align-items: center; justify-content: center; font-size: 60px; }
+.novel-bg.placeholder { background: linear-gradient(160deg, #e4e4e7, #cfcfd4); color: rgba(0, 0, 0, 0.2); }
 /* キャラクター：画面の真ん中に立つ。登場時は画面の下からせり上がる */
 .novel-char { position: absolute; bottom: 290px; width: 520px; height: 640px; animation: char-in .9s var(--lead, 0ms) cubic-bezier(.2, 1.15, .4, 1) both; }
 .novel-char.pos-center { left: 50%; margin-left: -260px; }
@@ -295,7 +297,7 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 .game-menu button { flex: 1; font-size: 44px; padding: 0; }
 .game {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px;
-  background: var(--bg);
+  background: linear-gradient(#f3f3f4, #e4e4e7);
 }
 .game-title { display: flex; align-items: center; gap: 22px; font-size: 52px; font-weight: 900; background: #fff; border-radius: 999px; padding: 10px 52px 10px 12px; box-shadow: var(--shadow-card); }
 .game-title span { font-size: 28px; letter-spacing: .12em; color: #fff; background: var(--red); border-radius: 999px; padding: 12px 28px; }
@@ -457,8 +459,12 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #8f0d22; background: var(--red); color: #fff; font-size: 34px; padding: 10px 44px; animation: pop-in .3s ease both; }
 
 
-/* ステージ1：マーク当てゲーム */
+/* ステージ1：マーク当てゲーム。丸模様は出さず、ぼかしたキービジュアルを半透明で敷く */
 .mark-game { justify-content: flex-end; gap: 0; padding: 0 0 180px; overflow: hidden; background: var(--bg); }
+.mark-bg {
+  position: absolute; left: -24px; top: -24px; width: calc(100% + 48px); height: calc(100% + 48px); z-index: 0;
+  object-fit: cover; object-position: center top; filter: blur(8px); opacity: 0.45; pointer-events: none;
+}
 .mark-body { position: relative; z-index: 1; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; padding: 48px 48px 12px; }
 .mark-speak { position: relative; z-index: 1; flex: none; width: 100%; display: flex; align-items: center; gap: 24px; padding: 0 40px; }
 .mark-speak-icon { width: 240px; height: 240px; flex: none; object-fit: contain; object-position: center bottom; background: none; border: 0; }

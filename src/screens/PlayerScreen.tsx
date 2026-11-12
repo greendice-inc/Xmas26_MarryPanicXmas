@@ -270,6 +270,7 @@ export default function PlayerScreen({ team }: { team: number }) {
           <Logo size="lg" />
           <Dots />
           <div className="cover-sub">しばらくお待ちください</div>
+          <img className="cover-kv-bg" src={KV_IMAGE} alt="" onError={hideImg} />
           <img className="cover-kv" src={KV_IMAGE} alt="" onError={hideImg} />
         </div>
       )}
