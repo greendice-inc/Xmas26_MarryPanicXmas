@@ -2,9 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { getBackend } from '../net'
 import { CATEGORIES, PRODUCTS, type CategoryKey, type Product } from './products'
 
-/** 商品は teams コレクションの文書。会場のルールがこのコレクションへの書き込みだけを許している */
-const COL = 'teams'
-const productKey = (id: string) => `p~${id}`
+/** 商品は items コレクション。チームの進行データ（teams）とは分ける */
+const COL = 'items'
 
 export interface ProductInput {
   category: CategoryKey
@@ -78,8 +77,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       getBackend().watchCol<Stored>(COL, (all) => {
         const next: Record<string, Stored> = {}
         for (const [id, data] of Object.entries(all)) {
-          if (!id.startsWith('p~') || data?.record !== 'product') continue
-          next[id.slice(2)] = data
+          if (data) next[id] = data
         }
         setCloud((prev) => {
           if (!prev) return next
@@ -106,8 +104,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const save = async (id: string | null, input: ProductInput) => {
     const docId = id ?? `item-${Date.now().toString(36)}`
     const prev = id ? stored.find((p) => p.id === id) : undefined
-    await getBackend().set(COL, productKey(docId), {
-      record: 'product',
+    await getBackend().set(COL, docId, {
       category: input.category,
       name: input.name.trim(),
       code: input.code,
@@ -121,14 +118,13 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const remove = (id: string) => getBackend().remove(COL, productKey(id))
+  const remove = (id: string) => getBackend().remove(COL, id)
 
   const importSeed = async () => {
     const have = new Set(stored.map((p) => p.id))
     for (const p of PRODUCTS) {
       if (have.has(p.id)) continue
-      await getBackend().set(COL, productKey(p.id), {
-        record: 'product',
+      await getBackend().set(COL, p.id, {
         category: p.category,
         name: p.name,
         code: p.code,

@@ -43,7 +43,7 @@ export function useTeamsAll(): Record<string, TeamDoc> {
   const [all, setAll] = useState<Record<string, TeamDoc>>({})
   useEffect(() => {
     const b = getBackend()
-    // チーム番号の文書だけを見る。商品データは同じコレクションに置いてある
+    // チーム番号の文書だけを見る。商品は items コレクション
     const unsubs = Array.from({ length: TEAM_COUNT }, (_, i) => {
       const id = String(i + 1)
       return b.watchDoc<TeamDoc>('teams', id, (d) => {
