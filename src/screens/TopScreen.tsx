@@ -1,5 +1,5 @@
 import Logo from '../components/Logo'
-import { TEAM_COUNT } from '../config'
+import { KV_IMAGE, TEAM_COUNT } from '../config'
 import { isOnline, useNow, usePresenceAll } from '../net/hooks'
 import { presenceKey, type Identity } from '../types'
 
@@ -21,11 +21,13 @@ export default function TopScreen({ onSelect, onOpenCatalog }: { onSelect: (i: I
 
   return (
     <div className="screen top">
+      <img className="top-bg" src={KV_IMAGE} alt="" />
       <header className="top-header">
         <Logo size="lg" />
         <div className="top-lead">
           <div>はじめに、この端末の役割をえらんでください</div>
           <div className="top-legend"><span className="tile-live">起動中</span> は、すでに別の端末で使われています</div>
+          <div className="top-updated">更新 {__UPDATED_AT__}</div>
         </div>
         {onOpenCatalog && <button className="ghost catalog-link" onClick={onOpenCatalog}>商品を登録</button>}
       </header>

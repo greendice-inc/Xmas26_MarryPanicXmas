@@ -104,6 +104,11 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 
 /* ---------- トップ ---------- */
 .top { display: flex; flex-direction: column; gap: 28px; background: var(--bg); }
+.top-bg {
+  position: absolute; left: -24px; top: -24px; width: calc(100% + 48px); height: calc(100% + 48px); z-index: 0;
+  object-fit: cover; object-position: center; filter: blur(8px); opacity: 0.45; pointer-events: none;
+}
+.top > :not(.top-bg) { position: relative; z-index: 1; }
 .top-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; gap: 24px; }
 button.catalog-link { flex: none; font-size: 28px; padding: 10px 22px; }
 .top-lead { font-size: 34px; color: var(--ink-sub); }
@@ -133,6 +138,7 @@ button.catalog-link { flex: none; font-size: 28px; padding: 10px 22px; }
 .tile-live::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: #3cb563; }
 .top-lead { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .top-legend { display: flex; align-items: center; gap: 12px; font-size: 26px; }
+.top-updated { font-size: 26px; font-weight: 700; color: var(--ink); }
 .top-legend .tile-live { position: static; }
 .tile-cap { font-size: 22px; letter-spacing: .2em; color: var(--ink-sub); }
 .tile-num { font-size: 76px; line-height: 1; }
