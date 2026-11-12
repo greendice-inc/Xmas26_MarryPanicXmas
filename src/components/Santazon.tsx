@@ -2,13 +2,12 @@ import { useRef, useState } from 'react'
 import {
   CATEGORIES,
   MAX_CART,
-  PRODUCTS,
   formatCode,
-  productById,
-  productsByCode,
+  isGame1LoseCart,
   type CategoryKey,
   type Product,
 } from '../santazon/products'
+import { useProducts } from '../santazon/useProducts'
 import type { OrderItem, TeamDoc } from '../types'
 
 interface Props {
@@ -25,14 +24,16 @@ function ProductImage({ p }: { p: Product }) {
 
 /** 注文画面「Santazon」。見た目はネット通販サイト風 */
 export default function Santazon({ doc, update, cart, setCart, onClose }: Props) {
+  const { products } = useProducts()
+  const productById = (id: string) => products.find((p) => p.id === id)
   const [tab, setTab] = useState<'list' | 'search'>('list')
   const [category, setCategory] = useState<CategoryKey>('game1')
   const [showSearched, setShowSearched] = useState(false)
-  const [notice, setNotice] = useState(false)
   const [detail, setDetail] = useState<Product | null>(null)
+  const [help, setHelp] = useState(false)
 
-  // 注文済みで、まだ正解していない間は新しい注文ができない
-  const ordering = !!doc.order && doc.order.status !== 'solved'
+  // 届く途中・解答中は新しい注文ができない。考え直す注文と、解き終わった注文は入れ直せる
+  const ordering = !!doc.order && (doc.order.status === 'ordered' || doc.order.status === 'delivered')
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   const full = cartCount >= MAX_CART
 
@@ -53,18 +54,23 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
 
   const confirm = () => {
     if (!cart.length || ordering) return
-    const orderedQty = [...doc.orderedQty]
-    cart.forEach((c) => {
-      const e = orderedQty.find((o) => o.id === c.id)
-      if (e) e.qty += c.qty
-      else orderedQty.push({ ...c })
-    })
-    update({ order: { items: cart, status: 'ordered', at: Date.now() }, orderedQty: orderedQty.map((o) => ({ ...o })) })
+    const correct = isGame1LoseCart(cart)
+    if (correct) {
+      const orderedQty = [...doc.orderedQty]
+      cart.forEach((c) => {
+        const e = orderedQty.find((o) => o.id === c.id)
+        if (e) e.qty += c.qty
+        else orderedQty.push({ ...c })
+      })
+      update({ order: { items: cart, status: 'ordered', at: Date.now() }, orderedQty: orderedQty.map((o) => ({ ...o })) })
+    } else {
+      update({ order: { items: cart, status: 'wrong', at: Date.now() } })
+    }
     setCart(() => [])
-    setNotice(true)
+    onClose()
   }
 
-  const listed = PRODUCTS.filter((p) => p.category === category && p.listed)
+  const listed = products.filter((p) => p.category === category && p.listed)
   const searchedProducts = doc.searched.map(productById).filter((p): p is Product => !!p)
 
   return (
@@ -80,6 +86,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
           <button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>リスト</button>
           <button className={tab === 'search' ? 'on' : ''} onClick={() => setTab('search')}>詳細検索</button>
         </nav>
+        <button className="sz-btn sz-yellow sz-help" onClick={() => setHelp(true)}>Santazonの使い方</button>
         <button className="sz-btn sz-yellow sz-top-btn" onClick={onClose}>トップに戻る</button>
       </header>
 
@@ -118,6 +125,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
             </>
           ) : (
             <SearchTab
+              products={products}
               searched={doc.searched}
               onFound={(ids) => {
                 const add = ids.filter((id) => !doc.searched.includes(id))
@@ -184,12 +192,13 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
         </div>
       )}
 
-      {notice && (
-        <div className="sz-dialog-back">
-          <div className="sz-dialog">
-            <h2>注文が確定しました。</h2>
-            <p>商品が届くまでお待ちください。</p>
-            <button className="sz-btn sz-yellow" onClick={() => setNotice(false)}>OK</button>
+      {help && (
+        <div className="sz-dialog-back" onClick={() => setHelp(false)}>
+          <div className="sz-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Santazonの使い方</h2>
+            <p>必要なアイテムを3つまでカートに追加して、注文確定ボタンを押すと、注文したものが宅配ソックスに届きます。</p>
+            <p>宅配ソックスの番号は、注文したあとに出てくる謎を解くとわかります。</p>
+            <button className="sz-btn sz-yellow" onClick={() => setHelp(false)}>閉じる</button>
           </div>
         </div>
       )}
@@ -216,10 +225,12 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
 /** 4桁のコードを、下の数字パネルをドラッグして四角にはめ込み、商品を検索する */
 function SearchTab({
+  products,
   searched,
   onFound,
   onOpenSearched,
 }: {
+  products: Product[]
   searched: string[]
   onFound: (ids: string[]) => void
   onOpenSearched: () => void
@@ -259,7 +270,8 @@ function SearchTab({
 
   const filled = slots.every((s) => s !== null)
   const search = () => {
-    const found = productsByCode(slots.join(''))
+    const code = slots.join('')
+    const found = products.filter((p) => p.code === code)
     setResult(found.length ? found : 'none')
     onFound(found.map((p) => p.id))
   }

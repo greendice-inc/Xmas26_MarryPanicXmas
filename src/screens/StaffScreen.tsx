@@ -5,10 +5,11 @@ import TwoTapButton from '../components/TwoTapButton'
 import { TEAM_COUNT } from '../config'
 import { getBackend } from '../net'
 import { isOnline, useNow, usePresenceAll, useTeamsAll } from '../net/hooks'
-import { productById } from '../santazon/products'
+import { useProducts } from '../santazon/useProducts'
 import { DEFAULT_TEAM, progressLabel } from '../types'
 
 export default function StaffScreen() {
+  const { products } = useProducts()
   const teams = useTeamsAll()
   const presence = usePresenceAll()
   const now = useNow()
@@ -34,15 +35,6 @@ export default function StaffScreen() {
     Promise.all(
       teamNos.map((n) => getBackend().set('teams', String(n), { locked, updatedAt: Date.now() })),
     ).catch(() => {})
-
-  /** 注文の準備ができた：プレイヤー端末に問題を出す */
-  const markReady = (n: number) => {
-    const order = teamDoc(n).order
-    if (!order) return
-    getBackend()
-      .set('teams', String(n), { order: { ...order, status: 'delivered' }, updatedAt: Date.now() })
-      .catch(() => {})
-  }
 
   return (
     <div className="screen staff">
@@ -80,14 +72,11 @@ export default function StaffScreen() {
                 {t.order ? (
                   <>
                     <span className={`order-status ${t.order.status}`}>
-                      {t.order.status === 'ordered' ? '注文あり' : t.order.status === 'delivered' ? '解答中' : '正解！'}
+                      {t.order.status === 'delivered' ? '解答中' : t.order.status === 'solved' ? '正解！' : '注文あり'}
                     </span>
                     <span className="order-items">
-                      {t.order.items.map((i) => `${productById(i.id)?.name ?? i.id}×${i.qty}`).join('、')}
+                      {t.order.items.map((i) => `${products.find((p) => p.id === i.id)?.name ?? i.id}×${i.qty}`).join('、')}
                     </span>
-                    {t.order.status === 'ordered' && (
-                      <button className="order-ready" onClick={() => markReady(n)}>準備完了</button>
-                    )}
                   </>
                 ) : (
                   <span className="order-none">注文なし</span>

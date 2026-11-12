@@ -31,16 +31,10 @@
   --panel: #f4f4f5;
   --line: #e0e0e2;
   --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.08);
-  /* 背景にうっすら浮かぶ色のまるいボケ */
-  --bokeh:
-    radial-gradient(circle at 10% 16%, rgba(var(--red-rgb), 0.06) 0 170px, transparent 171px),
-    radial-gradient(circle at 90% 86%, rgba(0, 0, 0, 0.045) 0 230px, transparent 231px),
-    radial-gradient(circle at 82% 12%, rgba(0, 0, 0, 0.03) 0 120px, transparent 121px),
-    radial-gradient(circle at 16% 90%, rgba(0, 0, 0, 0.03) 0 140px, transparent 141px);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-html, body, #root { margin: 0; height: 100%; overflow: hidden; background: #000; touch-action: manipulation; }
+html, body, #root { margin: 0; height: 100%; overflow: hidden; background: var(--bg); touch-action: manipulation; }
 body {
   font-family: 'Other', sans-serif;
   font-weight: 700;
@@ -48,7 +42,7 @@ body {
 }
 h1, h2 { margin: 0; }
 
-.viewport { position: fixed; inset: 0; background: #000; }
+.viewport { position: fixed; inset: 0; background: var(--bg); }
 .stage { position: absolute; transform-origin: top left; background: var(--bg); overflow: hidden; }
 
 .screen {
@@ -109,10 +103,11 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 @keyframes pop-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
 
 /* ---------- トップ ---------- */
-.top { display: flex; flex-direction: column; gap: 28px; background: var(--bokeh), var(--bg); }
-.top-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+.top { display: flex; flex-direction: column; gap: 28px; background: var(--bg); }
+.top-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; gap: 24px; }
+button.catalog-link { flex: none; font-size: 28px; padding: 10px 22px; }
 .top-lead { font-size: 34px; color: var(--ink-sub); }
-.top-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.top-cards { display: grid; grid-template-columns: 1fr; gap: 28px; }
 .tile-row { display: flex; gap: 24px; }
 .tile-row .tile { flex: 1; }
 
@@ -164,7 +159,7 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 .staff-order { display: flex; align-items: center; gap: 14px; min-height: 44px; font-size: 26px; }
 .order-none { color: #b0b0b5; }
 .order-status { flex: none; font-weight: 900; border-radius: 999px; padding: 4px 18px; }
-.order-status.ordered { background: #fff1d6; color: #b36b00; }
+.order-status.ordered, .order-status.wrong { background: #fff1d6; color: #b36b00; }
 .order-status.delivered { background: #dfeafb; color: #1f5fc4; }
 .order-status.solved { background: #e4f1e8; color: #2a7a45; }
 .order-items { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-sub); }
@@ -198,7 +193,7 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 .center-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; font-size: 44px; color: var(--ink-sub); }
 .start-menu {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px;
-  background: var(--bokeh), var(--bg);
+  background: var(--bg);
 }
 .start-menu .logo { font-size: 96px; --ring: 10px; --ring-in: 6px; }
 .team-label { font-size: 48px; font-weight: 900; background: #fff; border-radius: 999px; padding: 8px 56px; box-shadow: var(--shadow-card); }
@@ -214,13 +209,12 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 /* メインビジュアルのフタ */
 .cover {
   position: absolute; inset: 0; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 56px;
-  background: var(--bokeh), #fff; animation: fade-in .4s ease both;
+  background: var(--bg); animation: fade-in .4s ease both;
 }
 .cover .logo { font-size: 110px; --ring: 12px; --ring-in: 7px; }
 .cover-sub { font-size: 44px; color: var(--ink-sub); }
-/* KV：切り抜かずに全体を見せる（画像下端の黒い書き出し余白は隠す）。余った上下は、同じ絵をぼかして敷く */
+/* KV：切り抜かずに全体を見せる。はみ出す上下は地の単色 */
 .cover { overflow: hidden; }
-.cover-kv-bg { position: absolute; left: -80px; top: -80px; width: calc(100% + 160px); height: calc(100% + 160px); object-fit: cover; filter: blur(40px) brightness(.7); }
 .cover-kv { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 2134 / 1152; object-fit: cover; object-position: top; transform: translateY(-50%); }
 
 /* 読み込み中のドット */
@@ -232,9 +226,8 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 
 /* ---------- ノベル ---------- */
 .novel { position: absolute; inset: 0; }
-.novel-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.novel-bg { position: absolute; inset: 0; background: var(--bg); }
 .placeholder { display: flex; align-items: center; justify-content: center; font-size: 60px; }
-.novel-bg.placeholder { background: linear-gradient(160deg, #e4e4e7, #cfcfd4); color: rgba(0, 0, 0, 0.2); }
 /* キャラクター：画面の真ん中に立つ。登場時は画面の下からせり上がる */
 .novel-char { position: absolute; bottom: 290px; width: 520px; height: 640px; animation: char-in .9s var(--lead, 0ms) cubic-bezier(.2, 1.15, .4, 1) both; }
 .novel-char.pos-center { left: 50%; margin-left: -260px; }
@@ -267,13 +260,23 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 .novel-text.size-lg .text { font-size: 68px; }
 .novel-text .hl { color: var(--red); }
 .novel-panel-img { max-width: 100%; max-height: 260px; object-fit: contain; align-self: center; }
-.novel-panel .next { position: absolute; right: 40px; bottom: 16px; font-size: 40px; color: var(--charcoal); animation: bob .8s ease-in-out infinite; }
+.novel-panel .next, .points-banner .next { position: absolute; right: 40px; bottom: 16px; font-size: 40px; color: var(--charcoal); animation: bob .8s ease-in-out infinite; }
+.points-banner {
+  position: absolute; left: 50%; top: 42%; z-index: 2; transform: translate(-50%, -50%);
+  min-width: 760px; padding: 48px 80px 64px; text-align: center;
+  background: #fff; border: 6px solid var(--charcoal); border-radius: 28px;
+  font-family: 'Line', sans-serif; font-size: 84px; font-weight: 900; letter-spacing: .04em;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .18);
+  animation: points-in .9s ease both;
+}
+.points-banner .next { right: 28px; bottom: 12px; }
+@keyframes points-in { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
 /* タップで登場演出を飛ばしたとき */
 .novel.skip .novel-char, .novel.skip .novel-panel { animation-duration: .01s; animation-delay: 0s; }
 @keyframes bob { 50% { transform: translateY(8px); } }
 
 /* ---------- ゲーム ---------- */
-.player { padding: 0; background: var(--bokeh), var(--bg); }
+.player { padding: 0; background: var(--bg); }
 /* 会話・ゲーム画面の枠 */
 .play-frame {
   position: absolute; left: 40px; right: 40px; top: 40px; bottom: 200px; overflow: hidden;
@@ -292,7 +295,7 @@ button.order-ready { flex: none; font-size: 26px; padding: 6px 26px; border-radi
 .game-menu button { flex: 1; font-size: 44px; padding: 0; }
 .game {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px;
-  background: linear-gradient(#f3f3f4, #e4e4e7);
+  background: var(--bg);
 }
 .game-title { display: flex; align-items: center; gap: 22px; font-size: 52px; font-weight: 900; background: #fff; border-radius: 999px; padding: 10px 52px 10px 12px; box-shadow: var(--shadow-card); }
 .game-title span { font-size: 28px; letter-spacing: .12em; color: #fff; background: var(--red); border-radius: 999px; padding: 12px 28px; }
@@ -334,6 +337,15 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 @keyframes armed-pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
 
 .game-menu .on { --edge: var(--red); box-shadow: inset 0 0 0 4px var(--red), 0 6px 0 var(--red); color: var(--red); }
+.game-menu button.is-hot {
+  --edge: var(--red); color: var(--red); background: #fff;
+  animation: order-hot .7s ease-in-out infinite alternate;
+}
+.game-menu button.is-hot:active { transform: none; }
+@keyframes order-hot {
+  from { box-shadow: inset 0 0 0 8px var(--red), 0 6px 0 var(--red), 0 0 0 4px rgba(var(--red-rgb), .25); }
+  to { box-shadow: inset 0 0 0 8px var(--red), 0 6px 0 var(--red), 0 0 0 22px rgba(var(--red-rgb), .55); }
+}
 
 /* ---------- Santazon（注文画面） ---------- */
 .santazon { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; background: #eaeded; color: #0f1111; }
@@ -435,6 +447,7 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 /* 隠しメニューのボタンは全部グレー */
 .modal button { --edge: #1c1c1f; background: var(--charcoal); }
 
+.santazon .sz-help { font-size: 26px; padding: 10px 22px; }
 .santazon .sz-top-btn { margin-left: auto; font-size: 28px; padding: 12px 30px; }
 
 .santazon, .sz-dialog-back { font-weight: 400; }
@@ -444,12 +457,8 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #8f0d22; background: var(--red); color: #fff; font-size: 34px; padding: 10px 44px; animation: pop-in .3s ease both; }
 
 
-/* ステージ1：マーク当てゲーム。丸模様は出さず、ぼかしたキービジュアルを半透明で敷く */
+/* ステージ1：マーク当てゲーム */
 .mark-game { justify-content: flex-end; gap: 0; padding: 0 0 180px; overflow: hidden; background: var(--bg); }
-.mark-bg {
-  position: absolute; left: -24px; top: -24px; width: calc(100% + 48px); height: calc(100% + 48px); z-index: 0;
-  object-fit: cover; object-position: center top; filter: blur(8px); opacity: 0.45; pointer-events: none;
-}
 .mark-body { position: relative; z-index: 1; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; padding: 48px 48px 12px; }
 .mark-speak { position: relative; z-index: 1; flex: none; width: 100%; display: flex; align-items: center; gap: 24px; padding: 0 40px; }
 .mark-speak-icon { width: 240px; height: 240px; flex: none; object-fit: contain; object-position: center bottom; background: none; border: 0; }
@@ -457,6 +466,40 @@ button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #
 .mark-grid { display: flex; flex-direction: row; justify-content: center; align-items: flex-end; gap: 24px; }
 .mark-slot { display: flex; flex-direction: column; align-items: center; }
 .mark-score { height: 76px; font-size: 64px; font-weight: 900; line-height: 76px; color: var(--red); }
+
+/* マーク当てのあと：子供部屋と、注文を考え直すときのエルフ */
+.kids-room { position: absolute; inset: 0; }
+.kids-room-bg { width: 100%; height: 100%; object-fit: fill; display: block; }
+button.room-spot {
+  position: absolute; z-index: 2; width: 80px; height: 64px; padding: 0;
+  transform: translate(-50%, -100%);
+  background: transparent; color: var(--red); box-shadow: none;
+  font-size: 64px; line-height: 1; text-shadow: 0 3px 0 #fff, 0 0 8px #fff;
+  animation: bob .8s ease-in-out infinite;
+}
+button.room-spot:active { transform: translate(-50%, -100%); box-shadow: none; }
+.room-zoom-back {
+  position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 20, 20, .55); animation: fade-in .2s ease both;
+}
+.room-zoom { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.room-zoom-view {
+  width: 1100px; height: 740px; overflow: hidden; background: #111; border-radius: 16px;
+  border: 6px solid #fff; box-shadow: 0 16px 40px rgba(0, 0, 0, .4);
+}
+.room-zoom-view img { display: block; max-width: none; }
+.order-hint {
+  position: absolute; left: 40px; right: 40px; bottom: 184px; z-index: 7;
+  display: flex; align-items: center; gap: 20px; pointer-events: none;
+}
+.order-hint img { width: 160px; height: 160px; object-fit: contain; object-position: center bottom; }
+.order-hint p {
+  flex: 1; margin: 0; min-height: 120px; display: flex; align-items: center; padding: 20px 36px;
+  background: #fff; border: 4px solid var(--charcoal); border-radius: 20px;
+  font-family: 'Line', sans-serif; font-size: 40px; font-weight: 900; line-height: 1.45;
+  animation: pop-in .35s ease both;
+}
+.task-text { margin: 0; font-size: 40px; font-weight: 900; line-height: 1.5; text-align: center; }
 .mark-btn { position: relative; display: flex; align-items: center; justify-content: center; width: 220px; height: 220px; padding: 0; font-size: 40px; color: var(--ink); background: #fff; border-radius: 24px; box-shadow: inset 0 0 0 4px #cfcfd4, 0 6px 0 #cfcfd4; }
 .mark-btn.is-selected { box-shadow: inset 0 0 0 8px var(--red), 0 6px 0 var(--red-dark); }
 .mark-btn.is-solved { background: #f7f7f8; }
@@ -466,18 +509,8 @@ button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #
 .mark-input { height: 84px; display: flex; align-items: center; padding: 0 28px; background: #fff; border-radius: 20px; box-shadow: inset 0 0 0 4px var(--charcoal); font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: .06em; }
 .mark-keypad { display: flex; flex-direction: row; align-items: center; gap: 16px; }
 .key-row { display: flex; gap: 8px; }
-.key-row.digits .key-btn { --edge: var(--key-edge); width: 84px; height: 84px; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; color: var(--ink); background: var(--key); box-shadow: 0 5px 0 var(--key-edge); }
-.key-row.digits .key-btn:nth-child(1) { --key: #ffd0e0; --key-edge: #e89aaf; }
-.key-row.digits .key-btn:nth-child(2) { --key: #ffe0c2; --key-edge: #e0a56e; }
-.key-row.digits .key-btn:nth-child(3) { --key: #fff3b0; --key-edge: #d4b84a; }
-.key-row.digits .key-btn:nth-child(4) { --key: #d8f5c8; --key-edge: #8ec97a; }
-.key-row.digits .key-btn:nth-child(5) { --key: #c8efff; --key-edge: #6eb4d8; }
-.key-row.digits .key-btn:nth-child(6) { --key: #ddd0ff; --key-edge: #a48ad4; }
-.key-row.digits .key-btn:nth-child(7) { --key: #ffd0f0; --key-edge: #d47ab0; }
-.key-row.digits .key-btn:nth-child(8) { --key: #c8fff0; --key-edge: #62c8a8; }
-.key-row.digits .key-btn:nth-child(9) { --key: #ffe0d4; --key-edge: #e09880; }
-.key-row.digits .key-btn:nth-child(10) { --key: #e8d4ff; --key-edge: #b088d4; }
-.key-row.digits .key-btn:active { box-shadow: 0 0 0 var(--key-edge); }
+.key-row.digits .key-btn { width: 84px; height: 84px; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; color: var(--ink); background: #e6e6ea; box-shadow: 0 5px 0 #c4c4c8; }
+.key-row.digits .key-btn:active { box-shadow: 0 0 0 #c4c4c8; }
 .key-row.actions .key-btn { width: 148px; height: 84px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 36px; line-height: 1; }
 .key-btn { height: 80px; font-size: 48px; font-weight: 900; color: var(--ink); background: #fff; border-radius: 16px; box-shadow: inset 0 0 0 3px #cfcfd4, 0 5px 0 #cfcfd4; }
 .key-btn:active { box-shadow: inset 0 0 0 3px #cfcfd4; transform: translateY(3px); }
@@ -485,3 +518,60 @@ button.novel-next-btn { position: absolute; right: 40px; bottom: 24px; --edge: #
 .key-btn.is-ok, .key-btn.is-ok:disabled, .key-btn.is-ok:disabled:active { color: #fff; background: var(--red); box-shadow: 0 5px 0 var(--red-dark); }
 .key-btn.is-ok:disabled { opacity: .4; }
 .key-btn:disabled { background: #e4e4e7; color: #9a9aa0; box-shadow: 0 5px 0 #cfcfd4; }
+
+/* ---------- 商品登録（ゲーム画面とは別の、普通にスクロールするページ） ---------- */
+.catalog-page {
+  position: fixed; inset: 0; z-index: 20; overflow: auto;
+  background: #f3f3f4; color: var(--ink); font-weight: 500;
+}
+.catalog-page button, .catalog-page input, .catalog-page select, .catalog-page textarea {
+  font: inherit; color: var(--ink);
+}
+.catalog-page button {
+  background: #fff; box-shadow: inset 0 0 0 2px #d0d0d4; border-radius: 10px;
+  padding: 10px 18px; font-size: 16px; font-weight: 700;
+}
+.catalog-page button:active { transform: none; box-shadow: inset 0 0 0 2px #d0d0d4; }
+.catalog-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 28px 40px; background: #fff; border-bottom: 1px solid var(--line);
+}
+.catalog-header h1 { font-size: 32px; }
+.catalog-header p { margin: 6px 0 0; font-size: 15px; color: var(--ink-sub); }
+.catalog-page button.catalog-back { background: var(--charcoal); color: #fff; box-shadow: none; padding: 12px 22px; }
+.catalog-layout { display: grid; grid-template-columns: minmax(320px, 460px) 1fr; gap: 28px; max-width: 1200px; margin: 0 auto; padding: 28px 40px 80px; }
+.catalog-form, .catalog-list { background: #fff; border-radius: 16px; padding: 24px; box-shadow: var(--shadow-card); }
+.catalog-form { display: flex; flex-direction: column; gap: 16px; }
+.catalog-form label, .catalog-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; }
+.catalog-page input, .catalog-page select, .catalog-page textarea {
+  font-size: 16px; font-weight: 500; padding: 10px 12px; border: 1px solid #c8c8cc; border-radius: 8px; background: #fff;
+  user-select: text;
+}
+.catalog-page textarea { resize: vertical; }
+.catalog-code { display: flex; align-items: center; }
+.catalog-code span { display: flex; align-items: center; }
+.catalog-code input { width: 56px; text-align: center; font-size: 24px; font-weight: 700; }
+.catalog-code i { padding: 0 8px; font-style: normal; color: var(--ink-sub); }
+.catalog-radios { display: flex; gap: 20px; font-weight: 500; }
+.catalog-radios label { flex-direction: row; align-items: center; gap: 8px; font-size: 16px; }
+.catalog-field small { font-weight: 500; color: var(--ink-sub); line-height: 1.5; }
+.catalog-preview { display: flex; align-items: center; gap: 12px; }
+.catalog-preview img, .catalog-thumb img { width: 96px; height: 96px; object-fit: contain; background: #f6f6f7; border-radius: 8px; }
+.catalog-error { color: var(--red); font-weight: 700; }
+.catalog-ok { color: #2a7a45; font-weight: 700; }
+.catalog-actions { display: flex; gap: 12px; }
+.catalog-page button.catalog-submit { background: var(--red); color: #fff; box-shadow: none; padding: 12px 28px; font-size: 18px; }
+.catalog-page button.catalog-submit:disabled { background: #dcdcdc; color: #9b9b9b; }
+.catalog-list h2 { margin: 0 0 12px; font-size: 22px; }
+.catalog-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.catalog-thumb { flex: none; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: #f6f6f7; border-radius: 8px; font-size: 13px; color: var(--ink-sub); }
+.catalog-thumb img { width: 64px; height: 64px; }
+.catalog-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.catalog-row-text strong { font-size: 16px; }
+.catalog-row-text span { font-size: 13px; color: var(--ink-sub); font-weight: 500; }
+.catalog-note { color: var(--ink) !important; }
+.catalog-page button.catalog-delete { color: var(--red); }
+@media (max-width: 860px) {
+  .catalog-layout { grid-template-columns: 1fr; padding: 16px; }
+  .catalog-header { padding: 16px; }
+}

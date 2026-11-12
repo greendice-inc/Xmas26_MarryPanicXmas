@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 会場の端末から、ログインなしで読み書きする
+    match /teams/{id} {
+      allow read, write: if true;
+    }
+    match /presence/{id} {
+      allow read, write: if true;
+    }
+    // 商品登録サイトとゲームが共有する商品
+    match /products/{id} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -1,9 +1,9 @@
 import Logo from '../components/Logo'
-import { KEYBOX_COUNT, TEAM_COUNT } from '../config'
+import { TEAM_COUNT } from '../config'
 import { isOnline, useNow, usePresenceAll } from '../net/hooks'
 import { presenceKey, type Identity } from '../types'
 
-export default function TopScreen({ onSelect }: { onSelect: (i: Identity) => void }) {
+export default function TopScreen({ onSelect, onOpenCatalog }: { onSelect: (i: Identity) => void; onOpenCatalog?: () => void }) {
   // すでに別の端末で起動している役割には「起動中」の目印を出す
   const presence = usePresenceAll()
   const now = useNow()
@@ -27,6 +27,7 @@ export default function TopScreen({ onSelect }: { onSelect: (i: Identity) => voi
           <div>はじめに、この端末の役割をえらんでください</div>
           <div className="top-legend"><span className="tile-live">起動中</span> は、すでに別の端末で使われています</div>
         </div>
+        {onOpenCatalog && <button className="ghost catalog-link" onClick={onOpenCatalog}>商品を登録</button>}
       </header>
 
       <div className="top-cards">
@@ -35,22 +36,6 @@ export default function TopScreen({ onSelect }: { onSelect: (i: Identity) => voi
           <div className="tile-row">
             {tile({ role: 'master', id: 0 }, 'tile tile-wide', 'マスター')}
             {tile({ role: 'staff', id: 0 }, 'tile tile-wide', 'スタッフ')}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2 className="section-title">キーボックス</h2>
-          <div className="tile-row">
-            {Array.from({ length: KEYBOX_COUNT }, (_, i) => i + 1).map((n) =>
-              tile(
-                { role: 'keybox', id: n },
-                'tile tile-wide',
-                <>
-                  <span className="tile-cap">KEY BOX</span>
-                  {n}
-                </>,
-              ),
-            )}
           </div>
         </section>
       </div>

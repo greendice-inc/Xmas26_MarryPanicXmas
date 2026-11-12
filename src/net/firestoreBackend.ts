@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { collection, doc, getFirestore, onSnapshot, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getFirestore, onSnapshot, setDoc } from 'firebase/firestore'
 import type { Backend } from './backend'
 
 export function createFirestoreBackend(): Backend {
@@ -15,6 +15,9 @@ export function createFirestoreBackend(): Backend {
     kind: 'firestore',
     async set(col, id, data) {
       await setDoc(doc(db, col, id), data, { merge: true })
+    },
+    async remove(col, id) {
+      await deleteDoc(doc(db, col, id))
     },
     watchDoc(col, id, cb) {
       return onSnapshot(doc(db, col, id), (s) => cb(s.exists() ? (s.data() as any) : null))

@@ -1,4 +1,4 @@
-/** Santazon の商品データ（仮）。商品名・説明・コード・問題はあとで差し替える */
+/** 商品の初期データ。登録サイトで Firestore に入ったあとは、ゲームはそちらを表示する */
 
 export type CategoryKey = 'game1' | 'game2' | 'game3' | 'game4' | 'game5' | 'final'
 
@@ -26,6 +26,8 @@ export interface Product {
   listed: boolean
   /** 詳細検索で見られる説明。空なら「準備中」と表示 */
   description: string
+  /** 登録サイトだけのメモ。プレイヤーには出さない */
+  note?: string
 }
 
 const p = (
@@ -37,46 +39,40 @@ const p = (
   stock: number,
   listed: boolean,
   description = '',
-): Product => ({ id: `${category}-${n}`, category, emoji, name, code, stock, listed, description })
+  note = '',
+): Product => ({ id: `${category}-${n}`, category, emoji, name, code, stock, listed, description, note })
 
 /** 「1564」→「1-5-6-4」 */
 export const formatCode = (code: string) => code.split('').join('-')
 
 export const PRODUCTS: Product[] = [
-  p('game1', 1, '💍', '金の指輪', '1564', 1, true),
-  p('game1', 2, '➰', '輪ゴム', '2190', 1, true),
-  p('game1', 3, '⭕', '20cmのわなげ用リング', '1864', 1, true),
+  p('game1', 1, '👑', '王冠', '1913', 1, true),
+  p('game1', 2, '🥁', 'タンバリン', '2190', 1, true, '', '1で発送'),
+  p('game1', 3, '⭕', 'わなげ用リング', '1864', 0, true),
   p('game1', 4, '🎄', 'クリスマスリース', '1839', 1, true),
-  p('game1', 5, '🌀', 'フラフープ', '2453', 1, true),
+  p('game1', 5, '🌀', 'フラフープ', '2453', 1, true, '', '1で発送'),
   p('game2', 1, '🧍', 'マネキン', '1311', 0, false),
-  p('game2', 2, '🎩', '帽子', '2433', 0, false),
-  p('game2', 3, '👕', 'シャツ', '2054', 0, false),
-  p('game2', 4, '👖', 'オーバーオール', '1678', 0, false),
-  p('game3', 1, '🐧', 'ペンギンのぬいぐるみ', '1926', 1, true),
+  p('game2', 2, '🧥', 'セーター', '2054', 0, false),
+  p('game2', 3, '👖', 'オーバーオール', '1678', 0, false),
+  p('game3', 1, '🐧', 'ペンギンのぬいぐるみ', '1926', 1, true, '', '3で発送'),
   p('game3', 2, '🐍', 'ヘビのぬいぐるみ', '1478', 1, true),
-  p('game3', 3, '🪿', 'ガチョウのぬいぐるみ', '1620', 1, true),
+  p('game3', 3, '🪿', 'ガチョウのぬいぐるみ', '1620', 1, true, '', '3で発送'),
+  p('game3', 4, '🐋', 'クジラのぬいぐるみ', '2106', 1, true),
   p('game4', 1, '🕯️', 'ロウソク3本', '1592', 1, true),
   p('game4', 2, '⛄', 'スノーマン4体', '2367', 1, true),
   p('game4', 3, '🧩', 'ジグソーパズル1箱', '1745', 1, true),
   p('game4', 4, '🍾', 'シャンパン1本', '2129', 1, true),
   p('game4', 5, '🌺', 'ポインセチア5鉢', '1418', 1, true),
-  p('game4', 6, '🍷', 'ワイングラス2個', '2286', 1, true),
-  p('game4', 7, '🪆', 'マトリョーシカ3体', '1983', 1, true),
-  p('game4', 8, '☕', 'ホットココア1杯', '2475', 1, true),
-  p('game4', 9, '🍬', 'コンペイトウ1缶', '1536', 1, true),
-  p('game4', 10, '🍰', 'ケーキ2個', '2017', 1, true),
-  p('game4', 11, '🤹', 'ジャグリングセット', '1221', 5, true),
-  p('game4', 12, '🍳', 'おままごとセット', '2271', 5, true),
-  p('game4', 13, '✏️', '文房具セット', '1653', 5, true),
-  p('game4', 14, '🧭', '探検セット', '2104', 5, true),
-  p('final', 1, '🔴', 'レッドボール2個セット', '0002', 1, true),
-  p('final', 2, '🔵', 'ブルーボール2個セット', '1795', 1, true),
-  p('final', 3, '🟡', 'イエローボール2個セット', '2382', 1, true),
-  p('final', 4, '🟢', 'グリーンボール2個セット', '1340', 1, true),
-  p('final', 5, '🏠', 'エントツ', '0001', 5, false),
-  p('final', 6, '🔐', '金庫', '0001', 5, false),
-  p('final', 7, '🏀', 'スーパーボール', '1223', 1, false),
-  p('final', 8, '🎁', 'サプライズアイテム', '9999', 1, false),
+  p('game4', 6, '⚽', 'サッカーボール7個', '2002', 5, false, '', 'ファイナル1'),
+  p('final', 1, '🔴', 'レッドボール2個', '1020', 0, true, '直径10cmのボール', 'ファイナル2'),
+  p('final', 2, '🔵', 'ブルーボール2個', '0204', 0, true, '直径10cmのボール', 'ファイナル2'),
+  p('final', 3, '🟡', 'イエローボール2個', '2382', 1, true, '直径10cmのボール', 'ファイナル3'),
+  p('final', 4, '🟢', 'グリーンボール2個', '1340', 1, true, '直径10cmのボール', 'ファイナル3'),
+  p('final', 5, '🟣', 'パープルボール2個', '1432', 1, true, '直径10cmのボール'),
+  p('final', 6, '🏠', 'エントツ', '0001', 1, false, '内寸20cm四方の筒', 'ファイナル3'),
+  p('final', 7, '🔐', '金庫', '0025', 5, false, '', 'ファイナル4'),
+  p('final', 8, '🏀', 'スーパーボール', '1200', 1, false, '', 'ファイナル4'),
+  p('final', 9, '🎁', 'サプライズアイテム', '1999', 1, false),
 ]
 
 export const productById = (id: string): Product | undefined => PRODUCTS.find((x) => x.id === id)
@@ -100,3 +96,11 @@ export const PROBLEMS: Record<CategoryKey, Problem> = {
 }
 
 export const MAX_CART = 3
+
+/** ステージ1で、勝負に負けるために注文する3つ（王冠・タンバリン・フラフープ） */
+const GAME1_LOSE_IDS = ['game1-1', 'game1-2', 'game1-5']
+
+export function isGame1LoseCart(items: { id: string; qty: number }[]): boolean {
+  const ids = items.flatMap((i) => Array.from({ length: i.qty }, () => i.id)).sort()
+  return ids.join(',') === [...GAME1_LOSE_IDS].sort().join(',')
+}

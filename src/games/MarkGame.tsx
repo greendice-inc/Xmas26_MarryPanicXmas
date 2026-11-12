@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { KV_IMAGE } from '../config'
 import { characterImage } from '../scenario'
 import type { GameProps } from './index'
 
@@ -88,7 +87,6 @@ export default function MarkGame({ stage, onClear }: GameProps) {
 
   return (
     <div className="game mark-game">
-      <img className="mark-bg" src={KV_IMAGE} alt="" />
       <div className="mark-body">
         <h2 className="game-title"><span>GAME {stage}</span>マーク当て</h2>
 

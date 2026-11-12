@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { backgroundImage, characterImage, type Emotion, type NovelScene } from '../scenario'
+import { characterImage, type Emotion, type NovelLine, type NovelScene } from '../scenario'
 
 const CHAR_MS = 50
 /** 登場演出（キャラが下からせり上がる → パネルが出る）の長さ。この後に台詞が出始める */
@@ -58,6 +58,7 @@ export default function NovelPart({
   onFinish,
   lead,
   endButton,
+  onLine,
 }: {
   scene: NovelScene
   onFinish: () => void
@@ -65,6 +66,8 @@ export default function NovelPart({
   lead?: number
   /** 最後の台詞のあとに出すボタン（押すと次へ進む） */
   endButton?: { label: string; onClick: () => void }
+  /** 表示中の台詞が変わったとき */
+  onLine?: (line: NovelLine) => void
 }) {
   const [leadMs] = useState(lead ?? 500)
   const [idx, setIdx] = useState(0)
@@ -74,6 +77,10 @@ export default function NovelPart({
 
   const line = scene.lines[idx]
   const character = line.character ?? scene.character
+
+  useEffect(() => {
+    onLine?.(line)
+  }, [idx])
   const segs = parse(line.text)
   const total = segs.reduce((n, s) => n + s.t.length, 0)
   const talking = ready && shown < total
@@ -133,12 +140,14 @@ export default function NovelPart({
 
   return (
     <div className={`novel${skip ? ' skip' : ''}`} style={{ ['--lead' as string]: `${leadMs}ms` }} onClick={next}>
-      {scene.background ? (
-        <img className="novel-bg" src={backgroundImage(scene.background)} alt="" />
-      ) : (
-        <div className="novel-bg placeholder">背景画像</div>
-      )}
+      <div className="novel-bg" />
 
+      {line.banner ? (
+        <div className="points-banner">
+          【{line.banner}】
+          {ready && <div className="next">▼</div>}
+        </div>
+      ) : (
       <CharSlot
         pos="center"
         folder={character}
@@ -147,8 +156,9 @@ export default function NovelPart({
         talking={talking}
         happy={happy}
       />
+      )}
 
-      <div className="novel-panel">
+      {!line.banner && <div className="novel-panel">
         <div className="novel-speaker">{line.speaker}</div>
         <div className={`novel-text size-${line.size ?? 'md'}`}>
           {line.image && <img className="novel-panel-img" src={line.image} alt="" />}
@@ -167,7 +177,7 @@ export default function NovelPart({
         ) : (
           ready && !talking && <div className="next">▼</div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

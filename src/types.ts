@@ -23,8 +23,8 @@ export interface OrderItem {
   qty: number
 }
 
-/** ordered=スタッフの準備待ち / delivered=届いた（問題を解いている最中） / solved=正解 */
-export type OrderStatus = 'ordered' | 'delivered' | 'solved'
+/** ordered=届くまでの待ち / delivered=問題を解いている最中 / solved=正解 / wrong=注文の中身を考え直す */
+export type OrderStatus = 'ordered' | 'delivered' | 'solved' | 'wrong'
 
 export interface Order {
   items: OrderItem[]
@@ -50,6 +50,8 @@ export interface TeamDoc {
   orderedQty: OrderItem[]
   /** 詳細検索で調べた商品の id */
   searched: string[]
+  /** ステージ1のマーク当てが終わり、子供部屋を見ている */
+  markCleared: boolean
   updatedAt: number
 }
 
@@ -62,6 +64,7 @@ export const DEFAULT_TEAM: TeamDoc = {
   order: null,
   orderedQty: [],
   searched: [],
+  markCleared: false,
   updatedAt: 0,
 }
 

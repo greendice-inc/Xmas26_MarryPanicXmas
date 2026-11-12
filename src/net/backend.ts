@@ -5,6 +5,8 @@ export interface Backend {
   readonly kind: 'firestore' | 'local'
   /** マージ書き込み */
   set(col: string, id: string, data: Record<string, unknown>): Promise<void>
+  /** ドキュメントを消す */
+  remove(col: string, id: string): Promise<void>
   watchDoc<T>(col: string, id: string, cb: (data: T | null) => void): Unsubscribe
   watchCol<T>(col: string, cb: (all: Record<string, T>) => void): Unsubscribe
 }

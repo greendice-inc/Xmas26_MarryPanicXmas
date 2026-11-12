@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { HEARTBEAT_MS, PRESENCE_TIMEOUT_MS } from '../config'
+import { HEARTBEAT_MS, PRESENCE_TIMEOUT_MS, TEAM_COUNT } from '../config'
 import { DEFAULT_TEAM, presenceKey, type Identity, type PresenceDoc, type TeamDoc } from '../types'
 import { getBackend } from './index'
 
@@ -41,7 +41,17 @@ export function isOnline(p: PresenceDoc | undefined, now: number): boolean {
 
 export function useTeamsAll(): Record<string, TeamDoc> {
   const [all, setAll] = useState<Record<string, TeamDoc>>({})
-  useEffect(() => getBackend().watchCol<TeamDoc>('teams', setAll), [])
+  useEffect(() => {
+    const b = getBackend()
+    // チーム番号の文書だけを見る。商品データは同じコレクションに置いてある
+    const unsubs = Array.from({ length: TEAM_COUNT }, (_, i) => {
+      const id = String(i + 1)
+      return b.watchDoc<TeamDoc>('teams', id, (d) => {
+        setAll((prev) => ({ ...prev, [id]: d ?? DEFAULT_TEAM }))
+      })
+    })
+    return () => unsubs.forEach((u) => u())
+  }, [])
   return all
 }
 

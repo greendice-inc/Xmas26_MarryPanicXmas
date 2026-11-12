@@ -32,6 +32,13 @@ export function createLocalBackend(): Backend {
       channel.postMessage(1)
       notify()
     },
+    async remove(col, id) {
+      const all = read(col)
+      delete all[id]
+      localStorage.setItem(prefix + col, JSON.stringify(all))
+      channel.postMessage(1)
+      notify()
+    },
     watchDoc(col, id, cb) {
       return sub(() => cb((read(col)[id] as any) ?? null))
     },

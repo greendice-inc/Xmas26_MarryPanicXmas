@@ -19,6 +19,10 @@ export interface NovelLine {
   image?: string
   /** この台詞を話すキャラクターのフォルダ名（省略時はシーンの character） */
   character?: string
+  /** 台詞の代わりに、画面の中央へフェードインさせる表示 */
+  banner?: string
+  /** この台詞のあいだ、タブレットの注文ボタンを光らせる */
+  highlight?: 'order'
 }
 
 /** キャラクター画像のパス。folder は public/character 配下の 'Stage1'（prefix は st1）や 'Common'（案内役のエルフ、prefix は elf） */
@@ -72,12 +76,69 @@ export const ENDING: NovelScene = {
   ],
 }
 
-/** ゲームをクリアしたときの、キャラクターからのお礼。添字はステージ番号 - 1 */
-export const CLEAR: NovelScene[] = NOVEL.map((n) => ({
-  character: n.character,
-  background: n.background,
+/** マーク当てが終わったあとの、エルフと子供の会話 */
+const STAGE1_CLEAR: NovelScene = {
+  character: 'Stage1',
+  background: 'Stage1',
   lines: [
-    { speaker: 'サンタ', text: '{クリア}してくれてありがとう！', emotion: '喜' },
-    { speaker: 'サンタ', text: 'おかげで助かったよ！さあ、次へ進もう！', emotion: '楽' },
+    { speaker: 'エルフ', character: 'Common', text: '無事特定できたみたいですね。', emotion: '真顔' },
+    { speaker: '子供', text: 'やったー！いちおくポイントゲット！', emotion: '楽' },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: 'どうやらリンはもうポイントリングを終えちゃったみたいです。一億ポイントもゲットできるマークはないはずですが・・・',
+      emotion: '真顔',
+    },
+    { speaker: '', text: '', banner: 'リン１ポイント' },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: 'やっぱり…1億点取ったと思い込んでいるみたいです。このままだと、ゲームに負けることができないですね…',
+      emotion: '哀',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: 'そうだ！Santazonを使いましょう！Santazonを使うと、勝負に必要なアイテムを購入することができるんです！',
+      emotion: '楽',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: 'タブレットの左下にある注文ボタンを押すとSantazonのページを開くことができます。',
+      emotion: '真顔',
+      highlight: 'order',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: '必要なアイテムを3つまでカートに追加して、注文確定ボタンを押すと注文したものが宅配ソックスに届きます。',
+      emotion: '真顔',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: '宅配ソックスの番号は、注文した後に出てくる謎を解くとわかるようになってます！詳しい説明はSantazonページのSantazonの使い方。ボタンを押してみてください。',
+      emotion: '真顔',
+    },
+    {
+      speaker: 'エルフ',
+      character: 'Common',
+      text: 'では、Santazonを使ってゲームに負ける方法を考えてください！',
+      emotion: '楽',
+    },
   ],
-}))
+}
+
+/** ゲームをクリアしたときの会話。添字はステージ番号 - 1 */
+export const CLEAR: NovelScene[] = NOVEL.map((n, i): NovelScene => {
+  if (i === 0) return STAGE1_CLEAR
+  return {
+    character: n.character,
+    background: n.background,
+    lines: [
+      { speaker: 'サンタ', text: '{クリア}してくれてありがとう！', emotion: '喜' },
+      { speaker: 'サンタ', text: 'おかげで助かったよ！さあ、次へ進もう！', emotion: '楽' },
+    ],
+  }
+})
