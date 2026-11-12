@@ -1,5 +1,5 @@
 import Logo from '../components/Logo'
-import { KV_IMAGE, TEAM_COUNT } from '../config'
+import { TEAM_COUNT } from '../config'
 import { isOnline, useNow, usePresenceAll } from '../net/hooks'
 import { presenceKey, type Identity } from '../types'
 
@@ -21,7 +21,6 @@ export default function TopScreen({ onSelect, onOpenCatalog }: { onSelect: (i: I
 
   return (
     <div className="screen top">
-      <img className="top-bg" src={KV_IMAGE} alt="" />
       <header className="top-header">
         <Logo size="lg" />
         <div className="top-lead">

@@ -103,12 +103,7 @@ button.ghost, button.ghost:active { background: transparent; color: var(--ink-su
 @keyframes pop-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
 
 /* ---------- トップ ---------- */
-.top { display: flex; flex-direction: column; gap: 28px; background: var(--bg); }
-.top-bg {
-  position: absolute; left: -24px; top: -24px; width: calc(100% + 48px); height: calc(100% + 48px); z-index: 0;
-  object-fit: cover; object-position: center; filter: blur(8px); opacity: 0.45; pointer-events: none;
-}
-.top > :not(.top-bg) { position: relative; z-index: 1; }
+.top { display: flex; flex-direction: column; gap: 28px; background: #fff; }
 .top-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; gap: 24px; }
 button.catalog-link { flex: none; font-size: 28px; padding: 10px 22px; }
 .top-lead { font-size: 34px; color: var(--ink-sub); }
