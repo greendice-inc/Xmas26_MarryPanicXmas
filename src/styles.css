@@ -453,8 +453,9 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 }
 .santazon button.sz-hint-ch:active { filter: none; }
 .sz-ghost { position: absolute; z-index: 30; pointer-events: none; opacity: .85; transform: scale(1.1); }
+.santazon .sz-ghost { color: #ff9900; background: #fff; box-shadow: 0 5px 0 #c9ced1; }
 .santazon .sz-ghost.is-char {
-  width: auto; min-width: 72px; height: 72px; padding: 0 16px; font-size: 40px; color: #fff;
+  width: auto; min-width: 72px; height: 72px; padding: 0 16px; font-size: 40px;
 }
 .sz-detail { display: flex; gap: 24px; align-items: flex-start; background: #f7f7f7; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
 .sz-thumb-lg { flex: none; width: 240px; height: 240px; background: #fff; }
@@ -1003,3 +1004,80 @@ button.hide-edit-btn {
 .hide-goal { display: flex; flex-direction: column; align-items: center; gap: 36px; padding: 70px 100px; background: #fff; border: 8px solid var(--charcoal); border-radius: 40px; box-shadow: 0 16px 40px rgba(0, 0, 0, .35); animation: pop-in .3s cubic-bezier(.2, 1.3, .4, 1) both; }
 .hide-goal p { margin: 0; font-family: 'Line', sans-serif; font-size: 64px; font-weight: 900; line-height: 1.4; text-align: center; color: var(--ink); }
 .hide-goal button { font-size: 44px; padding: 16px 90px; --edge: #1c1c1f; background: var(--charcoal); }
+
+/* ダミー（マネキン）に引っかかったときの演出 */
+.hide-trick { position: absolute; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; background: rgba(15, 17, 17, .55); animation: fade-in .25s ease both; }
+.hide-trick img { width: 760px; max-height: 520px; object-fit: contain; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .4)); animation: pop-in .4s cubic-bezier(.2, 1.4, .4, 1) both; }
+.hide-trick-text {
+  font-family: 'Line', sans-serif; font-size: 120px; font-weight: 900; color: var(--red);
+  -webkit-text-stroke: 12px #fff; paint-order: stroke fill; text-shadow: 0 10px 0 rgba(0, 0, 0, .15);
+  animation: found-pop2 .7s .2s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+@keyframes found-pop2 { from { transform: scale(.2) rotate(-10deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
+
+/* ---------- ステージ3：押さえてワード ---------- */
+.word-game { position: absolute; inset: 0; background: #fff; }
+.word-room { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 20px 40px 24px; background: #f4f4f4; }
+.word-head { flex: none; display: flex; align-items: center; justify-content: center; gap: 48px; min-height: 140px; }
+.word-label {
+  padding: 10px 30px; font-size: 34px; font-weight: 900; color: #fff;
+  background: var(--charcoal); border-radius: 999px; white-space: nowrap;
+}
+.word-prompt {
+  display: flex; align-items: baseline; gap: 24px; padding: 14px 54px; min-width: 760px; justify-content: center;
+  background: #fff; border: 8px solid var(--charcoal); border-radius: 32px; box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
+}
+.word-prompt small { font-size: 34px; font-weight: 900; color: var(--ink-sub); white-space: nowrap; }
+.word-prompt b { font-family: 'Line', sans-serif; font-size: 76px; font-weight: 900; color: var(--ink); white-space: nowrap; letter-spacing: .08em; }
+.word-progress { display: flex; gap: 16px; }
+.word-progress i { width: 40px; height: 40px; border-radius: 50%; background: #d6d6da; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .12); }
+.word-progress i.is-on { background: #ffb400; box-shadow: inset 0 -4px 0 #c98700, 0 0 0 4px rgba(255, 180, 0, .3); }
+.word-sub { flex: none; min-height: 52px; margin: 6px 0 10px; font-size: 32px; font-weight: 900; color: var(--ink); text-align: center; }
+.word-field { position: relative; flex: 1; min-height: 0; }
+.word-stage {
+  position: absolute; top: 0; left: 50%; height: 100%; max-width: 100%;
+  transform: translateX(-50%);
+}
+.word-stage.is-play { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.word-stage .hide-bg { pointer-events: none; -webkit-user-drag: none; }
+.word-spot { position: absolute; border-radius: 50%; pointer-events: none; transition: box-shadow .12s, background .12s; }
+.word-spot.is-held { box-shadow: 0 0 0 10px #ffd400, 0 0 40px 14px rgba(255, 200, 0, .7); }
+.word-spot.is-debug { box-shadow: inset 0 0 0 4px var(--red); }
+.word-spot.is-debug.is-held { box-shadow: inset 0 0 0 4px var(--red), 0 0 0 10px #ffd400, 0 0 40px 14px rgba(255, 200, 0, .7); }
+.word-spot span {
+  position: absolute; left: 50%; top: -6px; transform: translate(-50%, -100%); padding: 0 10px;
+  font-size: 22px; font-weight: 900; color: #fff; background: rgba(0, 0, 0, .7); border-radius: 8px;
+}
+.word-flash {
+  /* 押さえている丸を隠さないよう、上の問題の位置に重ねる */
+  position: absolute; left: 50%; top: 92px; z-index: 6; transform: translate(-50%, -50%); pointer-events: none;
+  padding: 20px 70px; white-space: nowrap; font-family: 'Line', sans-serif; font-size: 72px; font-weight: 900;
+  background: rgba(255, 255, 255, .95); border: 8px solid var(--charcoal); border-radius: 40px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+  animation: word-flash 1.3s ease both;
+}
+.word-flash.is-ok, .word-flash.is-start { color: #e07b00; }
+.word-flash.is-miss { font-size: 52px; color: var(--red); border-color: var(--red); }
+@keyframes word-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  25% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.word-theme { display: flex; align-items: baseline; gap: 28px; padding: 14px 60px; font-size: 40px; font-weight: 900; color: var(--ink-sub); background: #fff; border: 8px solid var(--charcoal); border-radius: 32px; }
+.word-theme b { font-family: 'Line', sans-serif; font-size: 80px; color: var(--red); }
+.word-room > .word-head:has(.word-theme) { flex-direction: column; gap: 10px; min-height: 0; margin-bottom: 16px; }
+.word-room > .word-head .word-sub { margin: 0; }
+.word-game .mood-heart.word-heart { right: 16px; bottom: 10px; }
+.word-clear { position: absolute; inset: 0; z-index: 9; display: flex; align-items: center; justify-content: center; background: rgba(15, 17, 17, .45); pointer-events: none; animation: fade-in .25s ease both; }
+.word-clear-ring { position: absolute; left: 50%; top: 50%; width: 700px; height: 700px; margin: -350px 0 0 -350px; border-radius: 50%; border: 18px solid #ffd400; animation: found-ring 1.2s ease-out both; }
+.word-clear-ring.is-late { animation-delay: .35s; border-color: #fff; }
+.word-clear-text {
+  font-family: 'Line', sans-serif; font-size: 200px; font-weight: 900; color: #ffb400;
+  -webkit-text-stroke: 16px #fff; paint-order: stroke fill; text-shadow: 0 12px 0 rgba(0, 0, 0, .2);
+  animation: found-pop2 .7s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+.word-goal p { max-width: 1300px; font-size: 56px; }
+.area-box.is-round { border-radius: 50%; }
+.area-box.is-round i { right: 0; bottom: 0; }

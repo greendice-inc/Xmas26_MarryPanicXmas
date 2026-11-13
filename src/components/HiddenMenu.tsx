@@ -17,6 +17,12 @@ const JUMP_GAMES: Record<number, { label: string; step?: JumpTarget['step'] }[]>
     { label: 'ジミー後', step: 'jimmy' },
     { label: 'トミー後', step: 'tommy' },
   ],
+  3: [
+    { label: '説明', step: 'rule' },
+    { label: 'ゲーム1', step: 'g1' },
+    { label: 'ゲーム2', step: 'g2' },
+    { label: 'お題', step: 'room' },
+  ],
 }
 
 interface Props {
@@ -130,7 +136,7 @@ export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, loc
                   onSkipWait()
                 }}
               >
-                30秒をスキップ
+                待ち時間をスキップ
               </button>
             )}
             {fullscreenToggle && (

@@ -22,8 +22,11 @@ export type Phase = 'novel' | 'game' | 'clear' | 'end'
 export interface JumpTarget {
   stage: number
   phase: Phase
-  /** quiz=マークと得点当て / order=正しい注文 / start=ゲームのはじめ / amy・jimmy・tommy=その子を見つけたあと */
-  step?: 'quiz' | 'order' | 'start' | 'amy' | 'jimmy' | 'tommy'
+  /**
+   * quiz=マークと得点当て / order=正しい注文 / start=ゲームのはじめ / amy・jimmy・tommy=その子を見つけたあと
+   * ステージ3は WordStep（rule=ルール説明 / g1・g2=押さえてワード / room=部屋のお題と注文）
+   */
+  step?: 'quiz' | 'order' | 'start' | 'amy' | 'jimmy' | 'tommy' | WordStep
 }
 
 export interface OrderItem {
@@ -70,6 +73,8 @@ export interface TeamDoc {
   records?: string[]
   /** ステージ2（かくれんぼ）の進み具合 */
   hide?: HideProgress
+  /** ステージ3（押さえてワード）の進み具合 */
+  word?: WordProgress
   updatedAt: number
 }
 
@@ -78,6 +83,17 @@ export interface HideProgress {
   tutorialDone: boolean
   found: number
 }
+
+/** ステージ3：rule=エルフのルール説明 / g1・g2=押さえてワード / room=部屋のお題（注文できる） */
+export type WordStep = 'rule' | 'g1' | 'g2' | 'room'
+
+export interface WordProgress {
+  step: WordStep
+  /** 正しい注文をして、椅子が禁止になった話を聞いた */
+  chairTold: boolean
+}
+
+export const DEFAULT_WORD: WordProgress = { step: 'rule', chairTold: false }
 
 export const DEFAULT_TEAM: TeamDoc = {
   started: false,
@@ -92,6 +108,7 @@ export const DEFAULT_TEAM: TeamDoc = {
   searchUnlocked: false,
   records: [],
   hide: { tutorialDone: false, found: 0 },
+  word: DEFAULT_WORD,
   updatedAt: 0,
 }
 

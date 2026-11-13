@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import AreaEditor from '../components/AreaEditor'
 import MoodCard from '../components/MoodCard'
 import type { SzGuide, SzTab } from '../components/Santazon'
 import { useProducts } from '../santazon/useProducts'
-import { characterImage, RECORDS, ST2_KIDS, ST2_MOOD, st2GameImage, type Emotion } from '../scenario'
+import { characterImage, MANNEQUIN_IMAGE, RECORDS, ST2_KIDS, ST2_MOOD, st2GameImage, type Emotion } from '../scenario'
 import type { HideProgress, TeamDoc } from '../types'
 import {
   areasToCode,
@@ -18,6 +19,8 @@ import {
 /** 「みーつけた！」を見せる長さ */
 const FOUND_MS = 1800
 const CARD_ID = 'st2-card'
+/** ダミーに引っかかった演出の長さ */
+const TRICK_MS = 2800
 
 /** 案内が求める操作。tap=タップで次へ / shop=注文を開く / tab=リスト追加検索を押す */
 type Wait = 'tap' | 'shop' | 'tab'
@@ -52,7 +55,7 @@ const FOUND_TALK: Record<'amy' | 'jimmy' | 'tommy', { lines: string[]; hint: num
       '見つかっちゃった！',
       'じゃあ楽しかったから、ジミーを見つけるためのヒントあげるね！',
       'ジミーはマネキンに着せたセーターと同じ色の服を着てるよ！',
-      'それから、セーターの番号は2-3-2-3だよ！',
+      'それから、セーターの番号は2-0-5-4だよ！',
       'もう一回聞きたかったら右下の僕のアイコンをクリックしてね！',
     ],
     hint: [2, 3],
@@ -69,14 +72,15 @@ const FOUND_TALK: Record<'amy' | 'jimmy' | 'tommy', { lines: string[]; hint: num
     hint: [2, 3],
     banner: 'リスト追加検索を使ってトミーを見つけよう。',
   },
-  tommy: { lines: ['見つかっちゃった！'], hint: [] },
+  tommy: { lines: ['あ！ひっかかった！'], hint: [] },
 }
 
 /** 見つけた人数 → 次に探す子と、その子が正解になる条件の商品 */
-const TARGETS: { role: 'amy' | 'jimmy' | 'tommy'; item: string }[] = [
+/** 最後の正解はトミーではなくダミー（引っかかる）。そのあとトミーが出てくる */
+const TARGETS: { role: 'amy' | 'jimmy' | 'dummy'; item: string }[] = [
   { role: 'amy', item: 'マネキン' },
   { role: 'jimmy', item: 'セーター' },
-  { role: 'tommy', item: 'オーバーオール' },
+  { role: 'dummy', item: 'オーバーオール' },
 ]
 
 interface Props {
@@ -170,6 +174,8 @@ export default function HideSeek({ doc, update, shopOpen, szTab, onGuide, onAllF
   // ---------- 見つける ----------
   const [elfSays, setElfSays] = useState<string | null>(null)
   const [celebrate, setCelebrate] = useState<HideArea | null>(null)
+  // ダミーに引っかかったときの演出
+  const [trick, setTrick] = useState(false)
   const [talk, setTalk] = useState<{ role: 'amy' | 'jimmy' | 'tommy'; lines: string[]; idx: number; banner?: string } | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
   const [mood, setMood] = useState(false)
@@ -182,20 +188,32 @@ export default function HideSeek({ doc, update, shopOpen, szTab, onGuide, onAllF
 
   // 見つけた子の場所は消す
   const foundRoles = new Set<string>(TARGETS.slice(0, found).map((t) => t.role))
+  if (found >= 3) foundRoles.add('tommy')
   const visibleAreas = areas.filter((a) => !foundRoles.has(a.role))
 
   const pick = (area: HideArea) => {
-    if (tutorial || celebrate || talk || found >= 3) return
+    if (tutorial || celebrate || trick || talk || found >= 3) return
     const target = TARGETS[found]
     const ready = searchedNames.has(target.item)
     if (!ready && found > 0) return setElfSays('正解が確実にわかってから選ぼう。')
     if (!ready || area.role !== target.role) return setElfSays('本当にそれで大丈夫…？')
+    if (target.role === 'dummy') {
+      // マネキンの画像を真ん中に出して「ひっかかった！」。そのあとトミーが出てくる
+      setTrick(true)
+      setTimeout(() => {
+        setTrick(false)
+        update({ hide: { ...hide, found: found + 1 } })
+        setTalk({ role: 'tommy', lines: FOUND_TALK.tommy.lines, idx: 0 })
+      }, TRICK_MS)
+      return
+    }
+    const role = target.role
     setCelebrate(area)
     setTimeout(() => {
       setCelebrate(null)
       update({ hide: { ...hide, found: found + 1 } })
-      const t = FOUND_TALK[target.role]
-      setTalk({ role: target.role, lines: t.lines, idx: 0, banner: t.banner })
+      const t = FOUND_TALK[role]
+      setTalk({ role, lines: t.lines, idx: 0, banner: t.banner })
     }, FOUND_MS)
   }
 
@@ -230,7 +248,29 @@ export default function HideSeek({ doc, update, shopOpen, szTab, onGuide, onAllF
   return (
     <div className="hide-seek" ref={rootRef}>
       {editing ? (
-        <AreaEditor areas={areas} saved={saved} image={st2GameImage(found)} onClose={() => setEditing(false)} />
+        <AreaEditor
+          areas={areas}
+          saved={saved}
+          image={st2GameImage(found)}
+          aspect="1980 / 1200"
+          boxLabel={(a) => `${a.label}（${ROLE_LABEL[a.role]}）`}
+          boxClass={(a) => `role-${a.role}`}
+          fields={(sel, edit) => (
+            <label>
+              隠れている子
+              <select value={sel.role} onChange={(e) => edit({ role: e.target.value as HideRole })}>
+                {(Object.keys(ROLE_LABEL) as HideRole[]).map((r) => (
+                  <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          onSave={saveHideAreas}
+          onReset={resetHideAreas}
+          toCode={areasToCode}
+          codeHint="hideAreas.ts の DEFAULT_HIDE_AREAS に貼れます"
+          onClose={() => setEditing(false)}
+        />
       ) : (
         <div className="hide-stage">
           <img className="hide-bg" src={st2GameImage(found)} alt="" />
@@ -274,6 +314,13 @@ export default function HideSeek({ doc, update, shopOpen, szTab, onGuide, onAllF
         <button className="hide-edit-btn" onClick={() => setEditing((e) => !e)}>
           {editing ? 'ゲームに戻る' : 'エリア編集'}
         </button>
+      )}
+
+      {trick && (
+        <div className="hide-trick">
+          <img src={MANNEQUIN_IMAGE} alt="" />
+          <div className="hide-trick-text">ひっかかった！</div>
+        </div>
       )}
 
       {banner && (
@@ -344,127 +391,6 @@ export default function HideSeek({ doc, update, shopOpen, szTab, onGuide, onAllF
             </div>
           </div>,
         )}
-    </div>
-  )
-}
-
-/** タップできる場所を、ドラッグで動かす・右下の角で大きさを変える */
-function AreaEditor({ areas, saved, image, onClose }: { areas: HideArea[]; saved: boolean; image: string; onClose: () => void }) {
-  const [draft, setDraft] = useState<HideArea[]>(areas)
-  const [selected, setSelected] = useState<string | null>(areas[0]?.id ?? null)
-  const [status, setStatus] = useState('')
-  const stageRef = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ id: string; mode: 'move' | 'size'; px: number; py: number; start: HideArea } | null>(null)
-
-  // 保存が他の端末から届いたら、編集前の状態だけ合わせる
-  const dirty = JSON.stringify(draft) !== JSON.stringify(areas)
-  useEffect(() => {
-    if (!dirty) setDraft(areas)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [areas])
-
-  const down = (id: string, mode: 'move' | 'size') => (e: React.PointerEvent) => {
-    e.stopPropagation()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    const start = draft.find((a) => a.id === id)!
-    drag.current = { id, mode, px: e.clientX, py: e.clientY, start }
-    setSelected(id)
-  }
-  const move = (e: React.PointerEvent) => {
-    const d = drag.current
-    const el = stageRef.current
-    if (!d || !el) return
-    const r = el.getBoundingClientRect()
-    const dx = ((e.clientX - d.px) / r.width) * 100
-    const dy = ((e.clientY - d.py) / r.height) * 100
-    const s = d.start
-    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
-    const next =
-      d.mode === 'move'
-        ? { ...s, x: clamp(s.x + dx, 0, 100 - s.w), y: clamp(s.y + dy, 0, 100 - s.h) }
-        : { ...s, w: clamp(s.w + dx, 2, 100 - s.x), h: clamp(s.h + dy, 2, 100 - s.y) }
-    setDraft((all) => all.map((a) => (a.id === d.id ? next : a)))
-  }
-  const up = () => {
-    drag.current = null
-  }
-
-  const edit = (id: string, patch: Partial<HideArea>) => setDraft((all) => all.map((a) => (a.id === id ? { ...a, ...patch } : a)))
-  const sel = draft.find((a) => a.id === selected)
-
-  const save = async () => {
-    setStatus('保存中…')
-    try {
-      await saveHideAreas(draft)
-      setStatus('保存しました（全端末に反映されます）')
-    } catch {
-      setStatus('保存できませんでした。Firestore のルール（config）を確認してください')
-    }
-  }
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(areasToCode(draft))
-      setStatus('コードをコピーしました（hideAreas.ts の DEFAULT_HIDE_AREAS に貼れます）')
-    } catch {
-      setStatus('コピーできませんでした')
-    }
-  }
-  const reset = async () => {
-    try {
-      await resetHideAreas()
-      setStatus('保存を消して、初期値に戻しました')
-    } catch {
-      setStatus('戻せませんでした')
-    }
-  }
-
-  return (
-    <div className="area-editor" onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
-      <div className="hide-stage" ref={stageRef}>
-        <img className="hide-bg" src={image} alt="" />
-        {draft.map((a) => (
-          <div
-            key={a.id}
-            className={`area-box role-${a.role}${a.id === selected ? ' is-on' : ''}`}
-            style={{ left: `${a.x}%`, top: `${a.y}%`, width: `${a.w}%`, height: `${a.h}%` }}
-            onPointerDown={down(a.id, 'move')}
-          >
-            <span>{a.label}（{ROLE_LABEL[a.role]}）</span>
-            <i onPointerDown={down(a.id, 'size')} />
-          </div>
-        ))}
-      </div>
-      <div className="area-panel">
-        <h3>タップエリアの調整</h3>
-        <p>枠をドラッグで移動、右下の■で大きさを変えます。{saved ? '（保存済みの位置を表示中）' : '（初期値を表示中）'}</p>
-        {sel && (
-          <div className="area-fields">
-            <label>
-              名前
-              <input value={sel.label} onChange={(e) => edit(sel.id, { label: e.target.value })} />
-            </label>
-            <label>
-              隠れている子
-              <select value={sel.role} onChange={(e) => edit(sel.id, { role: e.target.value as HideRole })}>
-                {(Object.keys(ROLE_LABEL) as HideRole[]).map((r) => (
-                  <option key={r} value={r}>{ROLE_LABEL[r]}</option>
-                ))}
-              </select>
-            </label>
-            <small>
-              x {sel.x.toFixed(1)}% / y {sel.y.toFixed(1)}% / 幅 {sel.w.toFixed(1)}% / 高さ {sel.h.toFixed(1)}%
-            </small>
-          </div>
-        )}
-        <div className="area-actions">
-          <button onClick={save} disabled={!dirty && saved}>保存</button>
-          <button onClick={() => setDraft(areas)} disabled={!dirty}>編集を取り消す</button>
-          <button onClick={copy}>コードをコピー</button>
-          <button onClick={reset} disabled={!saved}>初期値に戻す</button>
-          <button onClick={onClose}>閉じる</button>
-        </div>
-        {status && <div className="area-status">{status}</div>}
-      </div>
     </div>
   )
 }

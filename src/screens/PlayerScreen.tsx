@@ -7,14 +7,15 @@ import NovelPart from '../components/NovelPart'
 import ProblemDialog from '../components/ProblemDialog'
 import Santazon, { type SzGuide, type SzTab } from '../components/Santazon'
 import HideSeek from '../games/HideSeek'
+import WordGame from '../games/WordGame'
 import { GAME_COUNT, KV_IMAGE, ROOM_BY_TEAM } from '../config'
 import { GAMES } from '../games'
 import { useTeam } from '../net/hooks'
-import { isGame1LoseCart, PROBLEMS } from '../santazon/products'
+import { isCorrectCart, isGame1LoseCart, ORDER_STAGES, PROBLEMS } from '../santazon/products'
 import { useProducts } from '../santazon/useProducts'
 import { CLEAR, ENDING, NOVEL, RECORDS, characterImage } from '../scenario'
-import { ADULT_WAIT_MS, setAdultSkip } from '../adultWait'
-import type { OrderItem } from '../types'
+import { adultWaitMs, setAdultSkip } from '../adultWait'
+import { DEFAULT_WORD, type OrderItem } from '../types'
 
 /** 正しい3点を注文してから、届いたポップアップが出るまで */
 const DELIVER_MS = 3000
@@ -26,6 +27,8 @@ const FADE_MS = 2500
 const BLACKOUT_MS = 600
 /** かくれんぼのステージ */
 const HIDE_STAGE = 2
+/** 押さえてワードのステージ */
+const WORD_STAGE = 3
 
 const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.style.display = 'none'
@@ -59,6 +62,7 @@ export default function PlayerScreen({ team }: { team: number }) {
       setTaskOpen(false)
       setRecordsOpen(false)
       setClearNext(null)
+      setChair(false)
       advancing.current = false
     }
     seenReset.current = { v: doc.resetAt }
@@ -78,6 +82,7 @@ export default function PlayerScreen({ team }: { team: number }) {
       setClosedDeliveryAt(null)
       setRecordsOpen(false)
       setClearNext(null)
+      setChair(false)
       advancing.current = false
     }
     seenEnter.current = { v: doc.enterAt }
@@ -96,6 +101,8 @@ export default function PlayerScreen({ team }: { team: number }) {
   )
   // クリアの会話を読み終えて「タップで次のステージ」を出しているステージ
   const [clearNext, setClearNext] = useState<number | null>(null)
+  // ステージ3：正しい注文が止められて、カイ・メイが椅子の話をしている
+  const [chair, setChair] = useState(false)
   // 場面転換：暗くしてから切り替え、フェードインで戻す
   const [blackout, setBlackout] = useState(false)
   const [fadeQuick, setFadeQuick] = useState(false)
@@ -142,9 +149,9 @@ export default function PlayerScreen({ team }: { team: number }) {
   const showGuide =
     loaded &&
     doc.phase === 'game' &&
-    doc.stage === 1 &&
+    ORDER_STAGES.includes(doc.stage) &&
     !!doc.order &&
-    isGame1LoseCart(doc.order.items) &&
+    isCorrectCart(doc.stage, doc.order.items) &&
     (doc.order.status === 'solved' || localProceedAt != null)
   const counting = showGuide && proceedAt != null && proceedAt > now
   const adultWait = counting || (showGuide && stayed)
@@ -152,7 +159,8 @@ export default function PlayerScreen({ team }: { team: number }) {
 
   const onSolved = () => {
     if (!doc.order) return
-    const nextProceedAt = isGame1LoseCart(doc.order.items) ? Date.now() + ADULT_WAIT_MS : undefined
+    const nextProceedAt =
+      ORDER_STAGES.includes(doc.stage) && isCorrectCart(doc.stage, doc.order.items) ? Date.now() + adultWaitMs(doc.stage) : undefined
     if (nextProceedAt != null) {
       advancing.current = false
       setLocalProceedAt(nextProceedAt)
@@ -169,15 +177,15 @@ export default function PlayerScreen({ team }: { team: number }) {
     else update({ stage: stage + 1, phase: 'novel' })
   }
 
-  // 王冠・タンバリン・フラフープだけが注文されたら、数秒後に自動で届ける
+  // 正しい注文（ステージ1は王冠・タンバリン・フラフープ、ステージ3はペンギン・ダチョウ）は、数秒後に自動で届ける
   useEffect(() => {
     const order = doc.order
-    if (!order || order.status !== 'ordered' || !isGame1LoseCart(order.items)) return
+    if (!order || order.status !== 'ordered' || !isCorrectCart(doc.stage, order.items)) return
     const t = setTimeout(() => {
       update({ order: { items: order.items, status: 'delivered', at: order.at } })
     }, DELIVER_MS)
     return () => clearTimeout(t)
-  }, [doc.order, update])
+  }, [doc.order, doc.stage, update])
 
   useEffect(() => {
     if (!adultWait || proceedAt == null) return
@@ -221,6 +229,7 @@ export default function PlayerScreen({ team }: { team: number }) {
       searchUnlocked: false,
       records: [],
       hide: { tutorialDone: false, found: 0 },
+      word: DEFAULT_WORD,
     })
     setCart([])
     setRecordsOpen(false)
@@ -262,7 +271,7 @@ export default function PlayerScreen({ team }: { team: number }) {
           scene={NOVEL[doc.stage - 1]}
           // フェードインが終わって、何もない背景を少し見せてからキャラを出す
           lead={fading ? FADE_MS + 800 : undefined}
-          onFinish={() => (doc.stage === HIDE_STAGE ? fadeThen(() => update({ phase: 'game' })) : update({ phase: 'game' }))}
+          onFinish={() => (doc.stage === HIDE_STAGE || doc.stage === WORD_STAGE ? fadeThen(() => update({ phase: 'game' })) : update({ phase: 'game' }))}
         />
       </>
     )
@@ -279,6 +288,17 @@ export default function PlayerScreen({ team }: { team: number }) {
           szTab={szTab}
           onGuide={onGuide}
           onAllFound={() => fadeThen(() => update({ phase: 'clear' }))}
+        />
+      )
+    } else if (doc.stage === WORD_STAGE) {
+      body = (
+        <WordGame
+          key={`g${doc.stage}-${doc.enterAt ?? 0}`}
+          doc={doc}
+          update={update}
+          shopOpen={shopOpen}
+          chair={chair}
+          onChairDone={() => setChair(false)}
         />
       )
     } else {
@@ -321,7 +341,10 @@ export default function PlayerScreen({ team }: { team: number }) {
   const talking = doc.phase === 'novel' || doc.phase === 'clear' || doc.phase === 'end'
   const openFrame = framed && (talking || (doc.phase === 'game' && doc.stage === 1))
   // マークの得点当てでは、まだ注文できない
-  const markQuiz = doc.stage === 1 && doc.phase === 'game' && !doc.markCleared
+  // ステージ3は、押さえてワードを2つ終えて部屋のお題が出てから
+  const markQuiz =
+    (doc.stage === 1 && doc.phase === 'game' && !doc.markCleared) ||
+    (doc.stage === WORD_STAGE && doc.phase === 'game' && (doc.word?.step ?? 'rule') !== 'room')
   const records = (doc.records ?? []).filter((id) => RECORDS[id])
   // 会話中に開いたままの画面は閉じる。テキストを送る以外の操作を残さない
   useEffect(() => {
@@ -349,6 +372,13 @@ export default function PlayerScreen({ team }: { team: number }) {
                 onTab={setSzTab}
                 searchUnlocked={!!doc.searchUnlocked || doc.stage > HIDE_STAGE}
                 guide={doc.phase === 'game' && doc.stage === HIDE_STAGE ? guide.sz : null}
+                onBeforeOrder={() => {
+                  // ステージ3：はじめて正しい注文をしたときは、カイ・メイが止めに入る
+                  if (doc.stage !== WORD_STAGE || doc.word?.chairTold) return false
+                  setChair(true)
+                  update({ word: { ...DEFAULT_WORD, ...doc.word, chairTold: true } })
+                  return true
+                }}
               />
             )}
           </div>
@@ -372,7 +402,7 @@ export default function PlayerScreen({ team }: { team: number }) {
             <ProblemDialog order={doc.order} onSolved={onSolved} onClose={() => setClosedDeliveryAt(doc.order?.at ?? null)} />
           )}
           {!talking && doc.order?.status === 'delivered' && closedDeliveryAt === doc.order.at && (
-            <button className={`sock-btn${doc.stage === 1 && doc.markCleared ? ' is-shifted' : ''}`} onClick={() => setClosedDeliveryAt(null)}>
+            <button className={`sock-btn${(doc.stage === 1 && doc.markCleared) || doc.stage === WORD_STAGE ? ' is-shifted' : ''}`} onClick={() => setClosedDeliveryAt(null)}>
               <svg viewBox="0 0 64 80" aria-hidden>
                 <path fill="currentColor" d="M16 24h30v24c0 1 1 4 6 6 7 3 10 8 7 14-3 6-12 8-20 5L22 65c-8-4-12-11-10-18l4-8V24z" />
                 <rect x="12" y="6" width="38" height="20" rx="6" fill="#fff" stroke="currentColor" strokeWidth="4" />

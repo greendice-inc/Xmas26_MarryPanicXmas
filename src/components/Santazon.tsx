@@ -3,7 +3,7 @@ import {
   CATEGORIES,
   MAX_CART,
   formatCode,
-  isGame1LoseCart,
+  isCorrectCart,
   type CategoryKey,
   type Product,
 } from '../santazon/products'
@@ -24,6 +24,8 @@ interface Props {
   searchUnlocked?: boolean
   /** 案内で目立たせる場所 */
   guide?: SzGuide | null
+  /** 正しい注文を確定する直前に呼ぶ。true を返すと注文しない（ステージ3の椅子の話） */
+  onBeforeOrder?: () => boolean
 }
 
 export type SzTab = 'list' | 'search'
@@ -39,7 +41,7 @@ function ProductImage({ p }: { p: Product }) {
 }
 
 /** 注文画面「Santazon」。見た目はネット通販サイト風 */
-export default function Santazon({ doc, update, cart, setCart, onClose, tab: tabProp, onTab, searchUnlocked = true, guide }: Props) {
+export default function Santazon({ doc, update, cart, setCart, onClose, tab: tabProp, onTab, searchUnlocked = true, guide, onBeforeOrder }: Props) {
   const { products } = useProducts()
   const productById = (id: string) => products.find((p) => p.id === id)
   const [ownTab, setOwnTab] = useState<SzTab>('list')
@@ -48,7 +50,10 @@ export default function Santazon({ doc, update, cart, setCart, onClose, tab: tab
     setOwnTab(t)
     onTab?.(t)
   }
-  const [category, setCategory] = useState<CategoryKey>('game1')
+  // 初期値は現在のステージのカテゴリ。選び直したら、そちらを優先する
+  const stageCategory = CATEGORIES[Math.min(CATEGORIES.length, Math.max(1, doc.stage)) - 1].key
+  const [picked, setPicked] = useState<CategoryKey | null>(null)
+  const category = picked ?? stageCategory
   const [showSearched, setShowSearched] = useState(false)
   const [detail, setDetail] = useState<Product | null>(null)
   const [help, setHelp] = useState(false)
@@ -77,8 +82,9 @@ export default function Santazon({ doc, update, cart, setCart, onClose, tab: tab
 
   const confirm = () => {
     if (!cart.length || ordering) return
-    const correct = isGame1LoseCart(cart)
+    const correct = isCorrectCart(doc.stage, cart)
     if (correct) {
+      if (onBeforeOrder?.()) return
       const orderedQty = [...doc.orderedQty]
       cart.forEach((c) => {
         const e = orderedQty.find((o) => o.id === c.id)
@@ -96,7 +102,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose, tab: tab
 
   // ステージが進むほど、その番号までのゲーム用アイテムが選べる
   const openCategories = CATEGORIES.slice(0, Math.min(CATEGORIES.length, Math.max(1, doc.stage)))
-  const selected = openCategories.some((c) => c.key === category) ? category : openCategories[0].key
+  const selected = openCategories.some((c) => c.key === category) ? category : openCategories[openCategories.length - 1].key
   const listed = products.filter((p) => p.category === selected && p.listed)
   const searchedProducts = doc.searched.map(productById).filter((p): p is Product => !!p)
   const rows = showSearched ? searchedProducts : listed
@@ -140,7 +146,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose, tab: tab
                 <select
                   value={selected}
                   onChange={(e) => {
-                    setCategory(e.target.value as CategoryKey)
+                    setPicked(e.target.value as CategoryKey)
                     setShowSearched(false)
                   }}
                 >
@@ -286,6 +292,12 @@ function ProductDetail({ p }: { p: Product }) {
   )
 }
 
+/** 枠に文字を並べたときに、その商品を探す合言葉 */
+const SPECIAL_WORDS: Record<string, string> = {
+  オバオル: 'オーバーオール',
+  スパボル: 'スーパーボール',
+}
+
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
 /** 下の説明文。ここにある文字も、枠へドラッグできる */
@@ -347,7 +359,9 @@ function SearchTab({
   const filled = slots.every((s) => s !== null)
   const search = () => {
     const code = slots.join('')
-    const found = products.filter((p) => p.code === code)
+    // 文字を並べたときだけの特別な検索（番号は要らない）
+    const special = SPECIAL_WORDS[code]
+    const found = special ? products.filter((p) => p.name === special) : products.filter((p) => p.code === code)
     setResult(found.length ? found : 'none')
     onFound(found.map((p) => p.id))
   }

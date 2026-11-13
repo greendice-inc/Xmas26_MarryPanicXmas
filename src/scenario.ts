@@ -76,6 +76,9 @@ export const ST2_KIDS = {
 /** ステージ2：ゲーム画面。found は見つけた人数（0〜3） */
 export const st2GameImage = (found: number) => `${BASE}BG/Stage2/st2_ゲーム画面_${Math.min(4, found + 1)}.png`
 
+/** ダミー（マネキン）の画像。専用の画像ができるまでは商品カードを使う */
+export const MANNEQUIN_IMAGE = `${BASE}slide/st2/card.png`
+
 /** 「記録」から見返せる画像 */
 export const RECORDS: Record<string, { title: string; image: string }> = {
   'st2-card': { title: 'マネキンとセーターの商品カード', image: `${BASE}slide/st2/card.png` },
@@ -119,8 +122,37 @@ const STAGE2_CLEAR: NovelScene = {
   character: 'Stage2',
   background: 'Stage2',
   lines: [
-    { speaker: ST2_KIDS_NAME, text: '全員見つかっちゃった！', emotion: '喜' },
-    { speaker: ST2_KIDS_NAME, text: 'でもすごく楽しかった！ありがとう！', emotion: '楽' },
+    { speaker: ST2_KIDS_NAME, text: 'やったー！勝った勝ったー！', emotion: '喜' },
+    { speaker: ST2_KIDS_NAME, text: 'すごく楽しかった！遊んでくれてありがとう！', emotion: '楽' },
+  ],
+}
+
+/** ステージ3：カイ・メイ（ふたりで一枚の画像） */
+export const ST3_NAME = 'カイ・メイ'
+/** ステージ3：ゲーム画面。1・2は押さえてワード、3は部屋でやるお題 */
+export const st3GameImage = (n: 1 | 2 | 3) => `${BASE}BG/Stage3/st3_ゲーム画面_${n}.png`
+
+/** ステージ3：ふたりのキモチ */
+export const ST3_MOOD: Mood = {
+  icon: characterImage('Stage3', '楽'),
+  name: ST3_NAME,
+  lines: [
+    { who: 'カイ', text: '私たちの考えたゲームを全部解いてほしい！' },
+    { who: 'メイ', text: '私たちの考えたゲームを全部解いてほしい！' },
+  ],
+}
+
+/** ステージ3の導入。カイ・メイと押さえてワード */
+const STAGE3_INTRO: NovelScene = {
+  character: 'Stage3',
+  background: 'Stage3',
+  lines: [
+    { speaker: ST3_NAME, text: '今回の対戦相手ですね。', emotion: '楽' },
+    { speaker: ST3_NAME, text: '私たちの考えたカイ・メイゲームをやってもらいます。', emotion: '喜' },
+    { speaker: ST3_NAME, text: '全部クリアできますかね？', emotion: '楽' },
+    { speaker: 'エルフ', character: 'Common', text: 'キモチヨメール使用中…', emotion: '真顔' },
+    { speaker: '', text: '', mood: ST3_MOOD },
+    { speaker: 'エルフ', character: 'Common', text: '頑張ってクリアしましょう。', emotion: '楽' },
   ],
 }
 
@@ -128,6 +160,7 @@ const STAGE2_CLEAR: NovelScene = {
 export const NOVEL: NovelScene[] = Array.from({ length: GAME_COUNT }, (_, i): NovelScene => {
   if (i === 0) return STAGE1_INTRO
   if (i === 1) return STAGE2_INTRO
+  if (i === 2) return STAGE3_INTRO
   // 素材が揃っているのは Stage1〜4。5以降は仮で Stage1 を使う
   return {
     character: `Stage${i < 4 ? i + 1 : 1}`,

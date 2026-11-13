@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import HiddenMenu from './components/HiddenMenu'
 import Stage from './components/Stage'
 import { ROOM_BY_TEAM } from './config'
-import { game1OrderedQty } from './santazon/products'
+import { game1OrderedQty, stage3OrderedQty } from './santazon/products'
 import { useTeam, usePresence } from './net/hooks'
 import { getBackend } from './net/index'
 import { ProductsProvider, useProducts } from './santazon/useProducts'
@@ -67,6 +67,11 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
               ? names.flatMap((n) => idOf(n) ?? [])
               : []
         const stage2Played = found > 0
+        // ステージ3：押さえてワードの位置。それより後は、注文まで済んでいる
+        const wordSteps = ['rule', 'g1', 'g2', 'room'] as const
+        const wordStep =
+          stage === 3 && phase === 'game' ? (wordSteps.find((w) => w === step) ?? 'rule') : stage > 3 || phase === 'end' ? 'room' : 'rule'
+        const pastStage3 = stage > 3 || phase === 'end'
         getBackend()
           .set('teams', String(team), {
             started: true,
@@ -75,7 +80,7 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
             phase,
             locked: false,
             order: null,
-            orderedQty: pastStage1 ? game1OrderedQty() : [],
+            orderedQty: [...(pastStage1 ? game1OrderedQty() : []), ...(pastStage3 ? stage3OrderedQty() : [])],
             searched,
             // ステージ1のゲーム2（正しい注文）は、特定が終わったあとの子供部屋
             markCleared: stage === 1 && step === 'order',
@@ -83,6 +88,7 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
             searchUnlocked: stage > 2 || phase === 'end' || stage2Played,
             records: stage > 2 || phase === 'end' || stage2Played ? ['st2-card'] : [],
             hide: { tutorialDone: stage2Played, found },
+            word: { step: wordStep, chairTold: pastStage3 },
             enterAt: Date.now(),
             updatedAt: Date.now(),
           })

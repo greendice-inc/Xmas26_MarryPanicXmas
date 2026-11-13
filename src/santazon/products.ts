@@ -91,7 +91,7 @@ export interface Problem {
 export const PROBLEMS: Record<CategoryKey, Problem> = {
   game1: { answer: 'タンバリン', code: '1111' },
   game2: { answer: '1234', code: '1234' },
-  game3: { answer: '1234', code: '1234' },
+  game3: { answer: '1234', code: '3333' },
   game4: { answer: '1234', code: '1234' },
   game5: { answer: '1234', code: '1234' },
   final: { answer: '1234', code: '1234' },
@@ -111,3 +111,24 @@ export function isGame1LoseCart(items: { id: string; qty: number }[]): boolean {
 export function game1OrderedQty(): { id: string; qty: number }[] {
   return GAME1_LOSE_IDS.map((id) => ({ id, qty: 1 }))
 }
+
+/** ステージ3で、椅子を使わずにお題をクリアするために注文する2つ（ペンギン・ダチョウ） */
+const STAGE3_IDS = ['game3-1', 'game3-3']
+
+export function isStage3Cart(items: { id: string; qty: number }[]): boolean {
+  const ids = items.flatMap((i) => Array.from({ length: i.qty }, () => i.id)).sort()
+  return ids.join(',') === [...STAGE3_IDS].sort().join(',')
+}
+
+/** ステージ3を終えたあとに、すでに注文済みになっている数 */
+export function stage3OrderedQty(): { id: string; qty: number }[] {
+  return STAGE3_IDS.map((id) => ({ id, qty: 1 }))
+}
+
+/** そのステージの正しい注文か。ステージ3以外は、ステージ1の3つ */
+export function isCorrectCart(stage: number, items: { id: string; qty: number }[]): boolean {
+  return stage === 3 ? isStage3Cart(items) : isGame1LoseCart(items)
+}
+
+/** 正しい注文が届いて正解したら、エルフが番号を出し、待ってから次のステージへ進むステージ */
+export const ORDER_STAGES = [1, 3]
