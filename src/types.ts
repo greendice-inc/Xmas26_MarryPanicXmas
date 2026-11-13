@@ -56,7 +56,19 @@ export interface TeamDoc {
   searched: string[]
   /** ステージ1のクリア会話が終わり、子供部屋を見ている */
   markCleared: boolean
+  /** Santazon の「リスト追加検索」タブを出してよいか（ステージ2の案内で解放） */
+  searchUnlocked?: boolean
+  /** 「記録」から見返せる画像の id（RECORDS のキー） */
+  records?: string[]
+  /** ステージ2（かくれんぼ）の進み具合 */
+  hide?: HideProgress
   updatedAt: number
+}
+
+/** ステージ2：tutorial=エルフの案内中 / 0〜3=見つけた人数（3で全員） */
+export interface HideProgress {
+  tutorialDone: boolean
+  found: number
 }
 
 export const DEFAULT_TEAM: TeamDoc = {
@@ -69,6 +81,9 @@ export const DEFAULT_TEAM: TeamDoc = {
   orderedQty: [],
   searched: [],
   markCleared: false,
+  searchUnlocked: false,
+  records: [],
+  hide: { tutorialDone: false, found: 0 },
   updatedAt: 0,
 }
 

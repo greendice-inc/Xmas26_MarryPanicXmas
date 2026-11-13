@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { characterImage } from '../scenario'
+import MoodCard from './MoodCard'
 
 const ROOM = `${import.meta.env.BASE_URL}BG/Stage1/st1_子供部屋.png`
 
@@ -17,6 +19,7 @@ const VIEW_H = 740
 /** 特定のあとの子供部屋。決めた場所をタップすると、そのあたりを中央に拡大する */
 export default function KidsRoom() {
   const [spot, setSpot] = useState<Spot | null>(null)
+  const [mood, setMood] = useState(false)
   const debug = new URLSearchParams(location.search).get('debug') === 'true'
 
   return (
@@ -31,6 +34,15 @@ export default function KidsRoom() {
           onClick={() => setSpot(s)}
         />
       ))}
+      <button className="mood-heart" aria-label="子供の気持ち" onClick={() => setMood(true)}>
+        <span />
+      </button>
+      {mood && (
+        <MoodCard
+          mood={{ icon: characterImage('Stage1', '楽'), name: 'リン', lines: [{ text: '1億ポイント取ったと思って、大喜びしている。' }] }}
+          onClose={() => setMood(false)}
+        />
+      )}
       {spot && (
         <div className="room-zoom-back" onClick={() => setSpot(null)}>
           <div className="room-zoom" onClick={(e) => e.stopPropagation()}>

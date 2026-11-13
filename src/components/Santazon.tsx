@@ -17,7 +17,21 @@ interface Props {
   cart: OrderItem[]
   setCart: (f: (c: OrderItem[]) => OrderItem[]) => void
   onClose: () => void
+  /** 表示中のタブ。渡すと親が切り替えを管理する（ステージ2の案内で使う） */
+  tab?: SzTab
+  onTab?: (tab: SzTab) => void
+  /** false = リスト追加検索タブを出さない（ステージ2の案内で解放するまで） */
+  searchUnlocked?: boolean
+  /** 案内で目立たせる場所 */
+  guide?: SzGuide | null
 }
+
+export type SzTab = 'list' | 'search'
+/** tab=リスト追加検索タブを目立たせる / talk=説明中（どこも触れない） */
+export type SzGuide = 'tab' | 'talk'
+
+/** リスト追加検索で、検索済みリストに載せてよい商品 */
+const SEARCH_LIST_NAMES = new Set(['マネキン', 'セーター', 'オーバーオール', 'スーパーボール'])
 
 function ProductImage({ p }: { p: Product }) {
   if (!p.image) return null
@@ -25,10 +39,15 @@ function ProductImage({ p }: { p: Product }) {
 }
 
 /** 注文画面「Santazon」。見た目はネット通販サイト風 */
-export default function Santazon({ doc, update, cart, setCart, onClose }: Props) {
+export default function Santazon({ doc, update, cart, setCart, onClose, tab: tabProp, onTab, searchUnlocked = true, guide }: Props) {
   const { products } = useProducts()
   const productById = (id: string) => products.find((p) => p.id === id)
-  const [tab, setTab] = useState<'list' | 'search'>('list')
+  const [ownTab, setOwnTab] = useState<SzTab>('list')
+  const tab = searchUnlocked ? (tabProp ?? ownTab) : 'list'
+  const setTab = (t: SzTab) => {
+    setOwnTab(t)
+    onTab?.(t)
+  }
   const [category, setCategory] = useState<CategoryKey>('game1')
   const [showSearched, setShowSearched] = useState(false)
   const [detail, setDetail] = useState<Product | null>(null)
@@ -87,7 +106,7 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
   }
 
   return (
-    <div className="santazon">
+    <div className={`santazon${guide ? ' is-guided' : ''}`}>
       <header className="sz-header">
         <button className="sz-home" onClick={onClose} aria-label="ホームに戻る">
           <svg viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
@@ -97,7 +116,17 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
         <div className="sz-logo">Santazon</div>
         <nav className="sz-tabs">
           <button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>リスト</button>
-          <button className={tab === 'search' ? 'on' : ''} onClick={() => setTab('search')}>リスト追加検索</button>
+          {searchUnlocked && (
+            <button
+              className={`${tab === 'search' ? 'on' : ''}${guide === 'tab' ? ' is-guide' : ''}`}
+              onClick={() => {
+                setTab('search')
+                setShowSearched(false)
+              }}
+            >
+              リスト追加検索
+            </button>
+          )}
         </nav>
         <button className="sz-btn sz-yellow sz-help" onClick={() => setHelp(true)}>Santazonの使い方</button>
         <button className="sz-btn sz-yellow sz-top-btn" onClick={onClose}>トップに戻る</button>
@@ -151,10 +180,14 @@ export default function Santazon({ doc, update, cart, setCart, onClose }: Props)
               products={products}
               searched={doc.searched}
               onFound={(ids) => {
-                const add = ids.filter((id) => !doc.searched.includes(id))
-                if (add.length) update({ searched: [...doc.searched, ...add] })
+                const addIds = ids.filter((id) => {
+                  const p = productById(id)
+                  return !!p && SEARCH_LIST_NAMES.has(p.name) && !doc.searched.includes(id)
+                })
+                if (addIds.length) update({ searched: [...doc.searched, ...addIds] })
               }}
               onOpenSearched={openSearched}
+              guided={!!guide}
             />
           )}
         </main>
@@ -255,19 +288,31 @@ function ProductDetail({ p }: { p: Product }) {
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
+/** 下の説明文。ここにある文字も、枠へドラッグできる */
+const HINT_LINES = [
+  '画面中のオレンジの文字を引っ張って、',
+  'バーで繋がれた4つのパープルの枠に当てはめることで',
+  'アイテムを指定すること',
+  'ここで書かれたオレンジの文字も、検索ボックスにドラッグすることができます。',
+]
+
 /** 4桁のコードを、下の数字パネルをドラッグして四角にはめ込み、商品を検索する */
 function SearchTab({
   products,
   searched,
   onFound,
   onOpenSearched,
+  guided,
 }: {
   products: Product[]
   searched: string[]
   onFound: (ids: string[]) => void
   onOpenSearched: () => void
+  /** 説明中。下の説明文はいじれないので隠す */
+  guided: boolean
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
+
   const [slots, setSlots] = useState<(string | null)[]>([null, null, null, null])
   const [drag, setDrag] = useState<{ digit: string; x: number; y: number } | null>(null)
   const [result, setResult] = useState<Product[] | 'none' | null>(null)
@@ -315,7 +360,9 @@ function SearchTab({
   return (
     <div className="sz-search" ref={rootRef}>
       <p className="sz-search-lead">
-        商品を検索すると詳細な説明が見られます。リストに載っていない商品も検索できます。一度検索したものは検索済みリストから確認できます。
+        商品を指定するとアイテムをリストに追加できます。
+        <br />
+        一度検索したものは検索済みリストから確認できます。
       </p>
       <button className="sz-btn sz-light sz-sm sz-search-list" onClick={onOpenSearched}>
         検索済みリスト（{searched.length}）
@@ -341,21 +388,58 @@ function SearchTab({
         <button className="sz-btn sz-light" onClick={clear}>クリア</button>
       </div>
 
-      <div className="sz-result">
-        {result === 'none' && <div className="sz-empty">該当する商品は見つかりませんでした</div>}
-        {result && result !== 'none' && result.map((p) => <ProductDetail p={p} key={p.id} />)}
-      </div>
+      {/* 検索結果は、他の部品に押しつぶされないよう、上に重ねて出す */}
+      <div className="sz-result" />
+      {result && (
+        <div className="sz-result-back" onClick={() => setResult(null)}>
+          <div className="sz-result-pop" onClick={(e) => e.stopPropagation()}>
+            {result === 'none' ? (
+              <div className="sz-result-none">該当する商品は見つかりませんでした</div>
+            ) : (
+              result.map((p) => <ProductDetail p={p} key={p.id} />)
+            )}
+            <button className="sz-btn sz-yellow" onClick={() => setResult(null)}>閉じる</button>
+          </div>
+        </div>
+      )}
 
       <div className="sz-panels">
         {DIGITS.map((d) => (
-          <button key={d} className="sz-panel" onPointerDown={down(d)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+          <button
+            key={d}
+            className="sz-panel"
+            onPointerDown={down(d)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
             {d}
           </button>
         ))}
       </div>
 
+      <p className="sz-search-hint" style={guided ? { visibility: 'hidden' } : undefined}>
+        {HINT_LINES.map((line, li) => (
+          <span className="sz-hint-line" key={li}>
+            {[...line].map((ch, ci) =>
+              ch === '、' || ch === '。' || ch === ' ' ? (
+                <span key={`${li}-${ci}`}>{ch}</span>
+              ) : (
+                <button
+                  key={`${li}-${ci}`}
+                  className="sz-hint-ch"
+                  onPointerDown={down(ch)}
+                  onPointerMove={move}
+                  onPointerUp={up}
+                  onPointerCancel={up}
+                >
+                  {ch}
+                </button>
+              ),
+            )}
+            {li < HINT_LINES.length - 1 && <br />}
+          </span>
+        ))}
+      </p>
+
       {drag && (
-        <div className="sz-panel sz-ghost" style={{ left: drag.x - 55, top: drag.y - 55 }}>
+        <div className={`sz-panel sz-ghost${DIGITS.includes(drag.digit) ? '' : ' is-char'}`} style={{ left: drag.x - 55, top: drag.y - 55 }}>
           {drag.digit}
         </div>
       )}

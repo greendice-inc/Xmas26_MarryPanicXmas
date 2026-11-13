@@ -12,5 +12,9 @@ service cloud.firestore {
     match /items/{id} {
       allow read, write: if true;
     }
+    // ゲームの設定（ステージ2のタップエリアなど）
+    match /config/{id} {
+      allow read, write: if true;
+    }
   }
 }

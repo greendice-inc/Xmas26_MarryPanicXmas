@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Dots from '../components/Dots'
 import GameMenu from '../components/GameMenu'
 import KidsRoom from '../components/KidsRoom'
 import Logo from '../components/Logo'
 import NovelPart from '../components/NovelPart'
 import ProblemDialog from '../components/ProblemDialog'
-import Santazon from '../components/Santazon'
+import Santazon, { type SzGuide, type SzTab } from '../components/Santazon'
+import HideSeek from '../games/HideSeek'
 import { GAME_COUNT, KV_IMAGE, ROOM_BY_TEAM } from '../config'
 import { GAMES } from '../games'
 import { useTeam } from '../net/hooks'
 import { isGame1LoseCart, PROBLEMS } from '../santazon/products'
 import { useProducts } from '../santazon/useProducts'
-import { CLEAR, ENDING, NOVEL, characterImage } from '../scenario'
+import { CLEAR, ENDING, NOVEL, RECORDS, characterImage } from '../scenario'
 import { ADULT_WAIT_MS, setAdultSkip } from '../adultWait'
 import type { OrderItem } from '../types'
 
@@ -21,6 +22,10 @@ const STAGE1_TASK = '失格にならないように、1点を下回って勝負�
 
 /** 暗転からのフェードインの長さ（styles.css の .fade-black と合わせる） */
 const FADE_MS = 2500
+/** 場面転換で暗くなるまで（styles.css の .fade-to-black と合わせる） */
+const BLACKOUT_MS = 600
+/** かくれんぼのステージ */
+const HIDE_STAGE = 2
 
 const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => {
   e.currentTarget.style.display = 'none'
@@ -52,6 +57,8 @@ export default function PlayerScreen({ team }: { team: number }) {
       setCart([])
       setLocalProceedAt(null)
       setTaskOpen(false)
+      setRecordsOpen(false)
+      setClearNext(null)
       advancing.current = false
     }
     seenReset.current = { v: doc.resetAt }
@@ -69,6 +76,8 @@ export default function PlayerScreen({ team }: { team: number }) {
       setLocalProceedAt(null)
       setTaskOpen(false)
       setClosedDeliveryAt(null)
+      setRecordsOpen(false)
+      setClearNext(null)
       advancing.current = false
     }
     seenEnter.current = { v: doc.enterAt }
@@ -76,7 +85,37 @@ export default function PlayerScreen({ team }: { team: number }) {
 
   // Santazon（注文画面）
   const [shopOpen, setShopOpen] = useState(false)
+  const [szTab, setSzTab] = useState<SzTab>('list')
   const [cart, setCart] = useState<OrderItem[]>([])
+  const [recordsOpen, setRecordsOpen] = useState(false)
+  // ステージ2の案内で目立たせる場所
+  const [guide, setGuide] = useState<{ menu: boolean; sz: SzGuide | null }>({ menu: false, sz: null })
+  const onGuide = useCallback(
+    (g: { menu: boolean; sz: SzGuide | null }) => setGuide((p) => (p.menu === g.menu && p.sz === g.sz ? p : g)),
+    [],
+  )
+  // クリアの会話を読み終えて「タップで次のステージ」を出しているステージ
+  const [clearNext, setClearNext] = useState<number | null>(null)
+  // 場面転換：暗くしてから切り替え、フェードインで戻す
+  const [blackout, setBlackout] = useState(false)
+  const [fadeQuick, setFadeQuick] = useState(false)
+  const blackoutThen = useRef<(() => void) | null>(null)
+  const fadeThen = (fn: () => void) => {
+    if (blackoutThen.current) return
+    blackoutThen.current = fn
+    setBlackout(true)
+  }
+  useEffect(() => {
+    if (!blackout) return
+    const t = setTimeout(() => {
+      blackoutThen.current?.()
+      blackoutThen.current = null
+      setBlackout(false)
+      setFadeQuick(true)
+      setFading(true)
+    }, BLACKOUT_MS)
+    return () => clearTimeout(t)
+  }, [blackout])
   const [taskOpen, setTaskOpen] = useState(false)
   const [closedDeliveryAt, setClosedDeliveryAt] = useState<number | null>(null)
   // 正解直後、Firestore の反映を待たずにエルフを出すための時刻
@@ -179,8 +218,13 @@ export default function PlayerScreen({ team }: { team: number }) {
       orderedQty: [],
       searched: [],
       markCleared: false,
+      searchUnlocked: false,
+      records: [],
+      hide: { tutorialDone: false, found: 0 },
     })
     setCart([])
+    setRecordsOpen(false)
+    setClearNext(null)
     setShopOpen(false)
     setLocalProceedAt(null)
     setTaskOpen(false)
@@ -218,13 +262,25 @@ export default function PlayerScreen({ team }: { team: number }) {
           scene={NOVEL[doc.stage - 1]}
           // フェードインが終わって、何もない背景を少し見せてからキャラを出す
           lead={fading ? FADE_MS + 800 : undefined}
-          onFinish={() => update({ phase: 'game' })}
+          onFinish={() => (doc.stage === HIDE_STAGE ? fadeThen(() => update({ phase: 'game' })) : update({ phase: 'game' }))}
         />
       </>
     )
   } else if (doc.phase === 'game') {
     if (doc.stage === 1 && doc.markCleared) {
       body = <KidsRoom />
+    } else if (doc.stage === HIDE_STAGE) {
+      body = (
+        <HideSeek
+          key={`g${doc.stage}`}
+          doc={doc}
+          update={update}
+          shopOpen={shopOpen}
+          szTab={szTab}
+          onGuide={onGuide}
+          onAllFound={() => fadeThen(() => update({ phase: 'clear' }))}
+        />
+      )
     } else {
       const Game = GAMES[doc.stage - 1]
       body = (
@@ -242,9 +298,10 @@ export default function PlayerScreen({ team }: { team: number }) {
         scene={CLEAR[doc.stage - 1]}
         onFinish={() => {
           if (doc.stage === 1) update({ phase: 'game', markCleared: true })
+          if (doc.stage === HIDE_STAGE) setClearNext(doc.stage)
         }}
         endButton={
-          doc.stage === 1
+          doc.stage === 1 || doc.stage === HIDE_STAGE
             ? undefined
             : {
                 label: '次に進む',
@@ -263,12 +320,18 @@ export default function PlayerScreen({ team }: { team: number }) {
   const framed = loaded && entered
   const talking = doc.phase === 'novel' || doc.phase === 'clear' || doc.phase === 'end'
   const openFrame = framed && (talking || (doc.phase === 'game' && doc.stage === 1))
+  // マークの得点当てでは、まだ注文できない
+  const markQuiz = doc.stage === 1 && doc.phase === 'game' && !doc.markCleared
+  const records = (doc.records ?? []).filter((id) => RECORDS[id])
   // 会話中に開いたままの画面は閉じる。テキストを送る以外の操作を残さない
   useEffect(() => {
-    if (!talking) return
+    if (!talking && !markQuiz) return
     setShopOpen(false)
-    setTaskOpen(false)
-  }, [talking])
+    if (talking) {
+      setTaskOpen(false)
+      setRecordsOpen(false)
+    }
+  }, [talking, markQuiz])
   return (
     <div className="screen player">
       {framed ? (
@@ -282,20 +345,34 @@ export default function PlayerScreen({ team }: { team: number }) {
                 cart={cart}
                 setCart={(f) => setCart(f)}
                 onClose={() => setShopOpen(false)}
+                tab={szTab}
+                onTab={setSzTab}
+                searchUnlocked={!!doc.searchUnlocked || doc.stage > HIDE_STAGE}
+                guide={doc.phase === 'game' && doc.stage === HIDE_STAGE ? guide.sz : null}
               />
             )}
           </div>
           <GameMenu
             shopOpen={shopOpen}
             locked={talking}
-            onOrder={() => setShopOpen((o) => !o)}
+            onOrder={
+              markQuiz
+                ? undefined
+                : () => {
+                    if (!shopOpen) setSzTab('list')
+                    setShopOpen(!shopOpen)
+                  }
+            }
             onTask={doc.stage === 1 && (doc.phase === 'clear' || doc.markCleared) ? () => setTaskOpen(true) : undefined}
+            onRecord={records.length ? () => setRecordsOpen(true) : undefined}
+            guide={doc.phase === 'game' && doc.stage === HIDE_STAGE && guide.menu ? '注文' : null}
+            guided={doc.phase === 'game' && doc.stage === HIDE_STAGE && (guide.menu || !!guide.sz)}
           />
           {!talking && doc.order?.status === 'delivered' && closedDeliveryAt !== doc.order.at && (
             <ProblemDialog order={doc.order} onSolved={onSolved} onClose={() => setClosedDeliveryAt(doc.order?.at ?? null)} />
           )}
           {!talking && doc.order?.status === 'delivered' && closedDeliveryAt === doc.order.at && (
-            <button className="sock-btn" onClick={() => setClosedDeliveryAt(null)}>
+            <button className={`sock-btn${doc.stage === 1 && doc.markCleared ? ' is-shifted' : ''}`} onClick={() => setClosedDeliveryAt(null)}>
               <svg viewBox="0 0 64 80" aria-hidden>
                 <path fill="currentColor" d="M16 24h30v24c0 1 1 4 6 6 7 3 10 8 7 14-3 6-12 8-20 5L22 65c-8-4-12-11-10-18l4-8V24z" />
                 <rect x="12" y="6" width="38" height="20" rx="6" fill="#fff" stroke="currentColor" strokeWidth="4" />
@@ -324,6 +401,31 @@ export default function PlayerScreen({ team }: { team: number }) {
               </div>
             </div>
           )}
+          {doc.phase === 'clear' && clearNext === doc.stage && (
+            <div className="stage-next" onClick={goNext}>
+              <div className="stage-next-row">
+                <i>▼</i>
+                <span>タップで次のステージに進む</span>
+                <i>▼</i>
+              </div>
+            </div>
+          )}
+          {!talking && recordsOpen && (
+            <div className="modal-back" onClick={() => setRecordsOpen(false)}>
+              <div className="modal records" onClick={(e) => e.stopPropagation()}>
+                <h2>記録</h2>
+                <div className="records-list">
+                  {records.map((id) => (
+                    <figure key={id}>
+                      <img src={RECORDS[id].image} alt="" />
+                      <figcaption>{RECORDS[id].title}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+                <button onClick={() => setRecordsOpen(false)}>閉じる</button>
+              </div>
+            </div>
+          )}
           {!talking && taskOpen && (
             <div className="modal-back" onClick={() => setTaskOpen(false)}>
               <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -337,7 +439,8 @@ export default function PlayerScreen({ team }: { team: number }) {
       ) : (
         body
       )}
-      {fading && <div className="fade-black" onAnimationEnd={() => setFading(false)} />}
+      {blackout && <div className="fade-to-black" />}
+      {fading && <div className={`fade-black${fadeQuick ? ' is-quick' : ''}`} onAnimationEnd={() => { setFading(false); setFadeQuick(false) }} />}
       {/* メインビジュアル（KV）のフタ。スタッフがロックを解除するまで操作不可 */}
       {entered && doc.locked && (
         <div className="cover">

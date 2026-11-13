@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { backgroundImage, characterImage, type Emotion, type NovelLine, type NovelScene } from '../scenario'
+import MoodCard from './MoodCard'
 
 const CHAR_MS = 50
 /** 登場演出（キャラが下からせり上がる → パネルが出る）の長さ。この後に台詞が出始める */
@@ -25,6 +26,7 @@ function Sparkle({ className }: { className: string }) {
 function CharSlot({
   pos,
   folder,
+  src,
   emotion,
   speaking,
   talking,
@@ -32,6 +34,8 @@ function CharSlot({
 }: {
   pos: 'left' | 'right' | 'center'
   folder?: string
+  /** 画像を直接指定するとき（folder より優先） */
+  src?: string
   emotion?: Emotion
   speaking: boolean
   talking: boolean
@@ -40,7 +44,13 @@ function CharSlot({
   return (
     <div className={`novel-char pos-${pos}${speaking ? '' : ' is-silent'}`}>
       <div className={`novel-char-body ${speaking && talking ? 'talking' : ''}`}>
-        {folder ? <img src={characterImage(folder, emotion)} alt="" /> : <div className="placeholder">🎅</div>}
+        {src ? (
+          <img src={src} alt="" />
+        ) : folder ? (
+          <img src={characterImage(folder, emotion)} alt="" />
+        ) : (
+          <div className="placeholder">🎅</div>
+        )}
         {speaking && happy && (
           <>
             <Sparkle className="sp1" />
@@ -146,7 +156,12 @@ export default function NovelPart({
         <div className="novel-bg placeholder">背景画像</div>
       )}
 
-      {line.banner ? (
+      {line.mood ? (
+        // ダイアログを閉じると次の台詞へ。背景のタップと二重に進まないよう、ここで止める
+        <div onClick={(e) => e.stopPropagation()}>
+          <MoodCard mood={line.mood} onClose={next} />
+        </div>
+      ) : line.banner ? (
         <div className="points-banner">
           【{line.banner}】
           {ready && <div className="next">▼</div>}
@@ -155,6 +170,7 @@ export default function NovelPart({
       <CharSlot
         pos="center"
         folder={character}
+        src={line.charSrc}
         emotion={line.emotion}
         speaking
         talking={talking}
@@ -162,7 +178,9 @@ export default function NovelPart({
       />
       )}
 
-      {!line.banner && <div className="novel-panel">
+      {line.slide && <img key={`slide${idx}`} className="novel-slide" src={line.slide} alt="" />}
+
+      {!line.banner && !line.mood && <div className="novel-panel">
         <div className="novel-speaker">{line.speaker}</div>
         <div className={`novel-text size-${line.size ?? 'md'}`}>
           {line.image && <img className="novel-panel-img" src={line.image} alt="" />}

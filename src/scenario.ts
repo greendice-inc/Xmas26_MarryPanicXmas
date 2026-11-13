@@ -21,6 +21,19 @@ export interface NovelLine {
   character?: string
   /** 台詞の代わりに、画面の中央へフェードインさせる表示 */
   banner?: string
+  /** キャラクター画像を直接指定する（シルエットなど、表情の決まりに当てはまらない画像） */
+  charSrc?: string
+  /** 台詞と一緒に、画面の中央へフェードインさせる画像 */
+  slide?: string
+  /** 台詞の代わりに、ハートを押したときと同じ「キモチ」のダイアログを出す */
+  mood?: Mood
+}
+
+/** ハートを押したときに出す「キモチ」 */
+export interface Mood {
+  icon: string
+  name: string
+  lines: { who?: string; text: string }[]
 }
 
 /** キャラクター画像のパス。folder は public/character 配下の 'Stage1'（prefix は st1）や 'Common'（案内役のエルフ、prefix は elf） */
@@ -50,9 +63,71 @@ const STAGE1_INTRO: NovelScene = {
   ],
 }
 
+const BASE = import.meta.env.BASE_URL
+
+/** ステージ2：三人兄弟のシルエット（見つかるまではこちらを出す） */
+export const st2Silhouette = (emotion: Emotion = '真顔') => `${BASE}character/Stage2/st2_silhouette_${emotion}.png`
+/** ステージ2：兄弟ひとりずつの画像 */
+export const ST2_KIDS = {
+  amy: { name: 'アミー', image: `${BASE}character/Stage2/st2_アミー.png` },
+  jimmy: { name: 'ジミー', image: `${BASE}character/Stage2/st2_ジミー.png` },
+  tommy: { name: 'トミー', image: `${BASE}character/Stage2/st2_トミー.png` },
+} as const
+/** ステージ2：ゲーム画面。found は見つけた人数（0〜3） */
+export const st2GameImage = (found: number) => `${BASE}BG/Stage2/st2_ゲーム画面_${Math.min(4, found + 1)}.png`
+
+/** 「記録」から見返せる画像 */
+export const RECORDS: Record<string, { title: string; image: string }> = {
+  'st2-card': { title: 'マネキンとセーターの商品カード', image: `${BASE}slide/st2/card.png` },
+}
+
+/** ステージ2：三人のキモチ。誰がどの名前かはわからないので、アイコンはシルエットのまま */
+export const ST2_MOOD: Mood = {
+  icon: st2Silhouette('楽'),
+  name: 'アミー・ジミー・トミー',
+  lines: [
+    { who: 'アミー（長男）', text: 'みんながどこに隠れたか知りたいから、一番初めに見つけて欲しいな' },
+    { who: 'ジミー（次男）', text: 'お兄ちゃんよりは長く隠れていたいな' },
+    { who: 'トミー（三男）', text: '最後に僕とダミーの二人になって、ダミーに引っかかって欲しいな' },
+  ],
+}
+
+const ST2_KIDS_NAME = 'アミー・ジミー・トミー'
+
+/** ステージ2の導入。三人兄弟（シルエット）とかくれんぼ */
+const STAGE2_INTRO: NovelScene = {
+  character: 'Stage2',
+  background: 'Stage2',
+  lines: [
+    { speaker: ST2_KIDS_NAME, charSrc: st2Silhouette('楽'), text: 'こんにちは！', emotion: '楽' },
+    { speaker: ST2_KIDS_NAME, charSrc: st2Silhouette('楽'), text: '僕たち三人兄弟とかくれんぼで遊ぼうよ！', emotion: '楽' },
+    {
+      speaker: ST2_KIDS_NAME,
+      charSrc: st2Silhouette('真顔'),
+      text: 'あ、そうそうさっき注文で子供のマネキンと洋服を2つ買って、ダミーを作ったんだ。',
+      slide: RECORDS['st2-card'].image,
+    },
+    { speaker: ST2_KIDS_NAME, charSrc: st2Silhouette('喜'), text: 'ダミーと合わせて4人で隠れるから、大人のふたりは僕らを見つけてね。', emotion: '喜' },
+    { speaker: 'エルフ', character: 'Common', text: 'キモチヨメール使って調べます。', emotion: '真顔' },
+    { speaker: '', text: '', mood: ST2_MOOD },
+    { speaker: 'エルフ', character: 'Common', text: 'まずは長男のアミーを見つけよう！', emotion: '楽' },
+  ],
+}
+
+/** ステージ2のクリア。見つかったので、シルエットではない方の画像を出す */
+const STAGE2_CLEAR: NovelScene = {
+  character: 'Stage2',
+  background: 'Stage2',
+  lines: [
+    { speaker: ST2_KIDS_NAME, text: '全員見つかっちゃった！', emotion: '喜' },
+    { speaker: ST2_KIDS_NAME, text: 'でもすごく楽しかった！ありがとう！', emotion: '楽' },
+  ],
+}
+
 /** ノベルパートのシナリオ。添字はステージ番号 - 1（ステージ番号は 1〜GAME_COUNT） */
 export const NOVEL: NovelScene[] = Array.from({ length: GAME_COUNT }, (_, i): NovelScene => {
   if (i === 0) return STAGE1_INTRO
+  if (i === 1) return STAGE2_INTRO
   // 素材が揃っているのは Stage1〜4。5以降は仮で Stage1 を使う
   return {
     character: `Stage${i < 4 ? i + 1 : 1}`,
@@ -136,6 +211,7 @@ const STAGE1_CLEAR: NovelScene = {
 /** ゲームをクリアしたときの会話。添字はステージ番号 - 1 */
 export const CLEAR: NovelScene[] = NOVEL.map((n, i): NovelScene => {
   if (i === 0) return STAGE1_CLEAR
+  if (i === 1) return STAGE2_CLEAR
   return {
     character: n.character,
     background: n.background,

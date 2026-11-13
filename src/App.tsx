@@ -66,6 +66,10 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
             orderedQty: pastStage1 ? game1OrderedQty() : [],
             searched: [],
             markCleared: false,
+            // ステージ2の案内でリスト追加検索と商品カードが解放される。それより後はすでに解放済み
+            searchUnlocked: stage > 2 || phase === 'end',
+            records: stage > 2 || phase === 'end' ? ['st2-card'] : [],
+            hide: { tutorialDone: false, found: 0 },
             enterAt: Date.now(),
             updatedAt: Date.now(),
           })

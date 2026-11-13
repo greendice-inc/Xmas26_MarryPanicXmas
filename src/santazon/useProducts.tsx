@@ -44,6 +44,8 @@ const ProductsContext = createContext<{
   save: (id: string | null, input: ProductInput) => Promise<void>
   remove: (id: string) => Promise<void>
   importSeed: () => Promise<void>
+  /** 同じ番号があれば更新、無ければ新規 */
+  importMany: (rows: ProductInput[]) => Promise<{ added: number; updated: number }>
 } | null>(null)
 
 function isCategory(v: unknown): v is CategoryKey {
@@ -147,8 +149,37 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const importMany = async (rows: ProductInput[]) => {
+    let added = 0
+    let updated = 0
+    const known = new Map<string, { id: string; image: string }>(stored.map((p) => [`${p.category}:${p.code}`, { id: p.id, image: p.image ?? '' }] as const))
+    for (const input of rows) {
+      const key = `${input.category}:${input.code}`
+      const hit = known.get(key)
+      const id = hit?.id ?? `item-${Date.now().toString(36)}-${added + updated}`
+      await getBackend().set(COL, id, {
+        category: input.category,
+        name: input.name.trim(),
+        code: input.code,
+        stock: input.stock,
+        available: input.available,
+        listed: input.listed,
+        description: input.description.trim(),
+        image: input.image || hit?.image || '',
+        note: input.note.trim(),
+        updatedAt: Date.now(),
+      })
+      if (hit) updated += 1
+      else {
+        added += 1
+        known.set(key, { id, image: input.image || '' })
+      }
+    }
+    return { added, updated }
+  }
+
   return (
-    <ProductsContext.Provider value={{ products, stored, loaded: cloud !== null, source, save, remove, importSeed }}>
+    <ProductsContext.Provider value={{ products, stored, loaded: cloud !== null, source, save, remove, importSeed, importMany }}>
       {children}
     </ProductsContext.Provider>
   )
