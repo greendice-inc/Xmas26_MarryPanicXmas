@@ -27,6 +27,9 @@ export interface NovelLine {
   slide?: string
   /** 台詞の代わりに、ハートを押したときと同じ「キモチ」のダイアログを出す */
   mood?: Mood
+  /** この台詞が出たときに鳴らす効果音・音声（URL） */
+  se?: string
+  voice?: string
 }
 
 /** ハートを押したときに出す「キモチ」 */

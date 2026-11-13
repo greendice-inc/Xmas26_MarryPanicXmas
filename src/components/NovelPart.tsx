@@ -85,16 +85,32 @@ export default function NovelPart({
   const [ready, setReady] = useState(false) // 登場演出が終わったか
   const [skip, setSkip] = useState(false)
 
-  const line = scene.lines[idx]
+  // 保存したセリフが途中で届いて行数が減っても、範囲の外を読まない
+  const line = scene.lines[Math.min(idx, scene.lines.length - 1)]
   const character = line.character ?? scene.character
 
   useEffect(() => {
     onLine?.(line)
   }, [idx])
+
+  // 台詞が出たら効果音・音声を鳴らす。次の台詞に進んだら音声は止める
+  useEffect(() => {
+    if (!ready) return
+    const play = (src?: string) => {
+      if (!src) return null
+      const a = new Audio(src)
+      a.play().catch(() => {})
+      return a
+    }
+    play(line.se)
+    const voice = play(line.voice)
+    return () => voice?.pause()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, ready])
   const segs = parse(line.text)
   const total = segs.reduce((n, s) => n + s.t.length, 0)
   const talking = ready && shown < total
-  const isLast = idx === scene.lines.length - 1
+  const isLast = idx >= scene.lines.length - 1
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), leadMs + INTRO_MS)

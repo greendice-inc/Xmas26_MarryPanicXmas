@@ -1081,3 +1081,72 @@ button.hide-edit-btn {
 .word-goal p { max-width: 1300px; font-size: 56px; }
 .area-box.is-round { border-radius: 50%; }
 .area-box.is-round i { right: 0; bottom: 0; }
+
+/* ---------- セリフ編集（?debug=true の /script） ---------- */
+.top-debug-links { display: flex; gap: 16px; flex: none; }
+button.catalog-link.script-link { --edge: #1c1c1f; background: var(--charcoal); }
+.script-header { position: sticky; top: 0; z-index: 5; }
+.script-status { align-self: center; font-size: 15px; font-weight: 700; color: #2a7a45; }
+.script-status.is-error { color: var(--red); }
+.catalog-page .script-tabs { position: sticky; top: 118px; z-index: 4; display: flex; gap: 6px; padding: 12px 40px 0; background: #f3f3f4; border-bottom: 2px solid var(--line); }
+.catalog-page .script-tabs button { padding: 12px 26px; font-size: 18px; border-radius: 10px 10px 0 0; box-shadow: none; background: transparent; color: var(--ink-sub); }
+.catalog-page .script-tabs button.on { background: #fff; color: var(--ink); box-shadow: inset 0 3px 0 var(--red); }
+.script-tabs i { margin-left: 6px; font-style: normal; color: #e07b00; font-size: 12px; vertical-align: middle; }
+.script-body { max-width: 1400px; margin: 0 auto; padding: 24px 40px 120px; display: flex; flex-direction: column; gap: 28px; }
+.script-hint { font-size: 13px; font-weight: 500; color: var(--ink-sub); }
+.script-note { margin: 0; color: var(--ink-sub); }
+.catalog-page button.script-danger { color: var(--red); }
+.catalog-page button:disabled { opacity: .4; }
+
+/* キャラクター */
+.script-chars { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 20px; }
+.script-char { display: flex; flex-direction: column; gap: 12px; padding: 20px; background: #fff; border-radius: 16px; box-shadow: var(--shadow-card); border: 2px solid transparent; }
+.script-char.is-dirty { border-color: #ffb400; }
+.script-char-head { display: flex; align-items: flex-end; gap: 12px; }
+.script-char-head label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; }
+.script-faces { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.script-face { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.catalog-page button.script-face-img { width: 100%; aspect-ratio: 3 / 4; padding: 4px; display: flex; align-items: flex-end; justify-content: center; background: #f6f6f7 repeating-conic-gradient(#ececee 0 25%, #f8f8f9 0 50%) 0 0 / 16px 16px; }
+.script-face-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.script-face-img span { align-self: center; font-size: 14px; color: var(--ink-sub); }
+.script-face-label { display: flex; align-items: center; gap: 6px; font-weight: 900; }
+.catalog-page button.script-x { padding: 0 8px; font-size: 14px; line-height: 1.4; }
+.catalog-page button.script-add-char { min-height: 200px; font-size: 20px; border: 3px dashed #c8c8cc; box-shadow: none; background: transparent; color: var(--ink-sub); }
+.script-sounds { padding: 20px; background: #fff; border-radius: 16px; box-shadow: var(--shadow-card); }
+.script-sounds h2 { margin: 0 0 6px; font-size: 20px; }
+.script-sound-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.script-sound-row span { flex: 1; }
+
+/* 場面とセリフ */
+.script-scene { padding: 20px; background: #fff; border-radius: 16px; box-shadow: var(--shadow-card); }
+.script-scene-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.script-scene-head h2 { margin: 0; font-size: 24px; }
+.script-badge { padding: 2px 12px; font-size: 13px; font-weight: 700; border-radius: 999px; background: #eee; color: var(--ink-sub); }
+.script-scene-actions { margin-left: auto; display: flex; gap: 10px; }
+.script-lines { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.script-line { display: grid; grid-template-columns: 36px 110px 1fr auto; gap: 14px; align-items: start; padding: 14px 0; border-top: 1px solid var(--line); }
+.script-line-no { padding-top: 10px; font-weight: 900; color: var(--ink-sub); text-align: right; }
+.script-line-face { width: 110px; height: 140px; display: flex; align-items: flex-end; justify-content: center; background: #f6f6f7; border-radius: 10px; overflow: hidden; }
+.script-line-face img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.script-line-face span { align-self: center; font-size: 13px; font-weight: 700; color: var(--ink-sub); }
+.script-line-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.script-line-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.script-line textarea { width: 100%; font-size: 18px; line-height: 1.5; }
+.script-line.kind-banner .script-line-face { background: #fff4d6; }
+.script-line.kind-mood .script-line-face { background: #ffe3ea; }
+.script-emotions { display: flex; gap: 4px; }
+.catalog-page .script-emotions button { width: 58px; padding: 2px; display: flex; flex-direction: column; align-items: center; gap: 0; font-size: 12px; }
+.script-emotions img { width: 48px; height: 48px; object-fit: contain; object-position: center bottom; }
+.catalog-page .script-emotions button.on { background: #fff4d6; box-shadow: inset 0 0 0 3px #ffb400; }
+.script-mood { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; background: #fff7f9; border-radius: 10px; font-size: 15px; }
+.script-sound { display: flex; align-items: center; gap: 6px; }
+.script-sound > span { font-size: 13px; font-weight: 900; color: var(--ink-sub); }
+.catalog-page .script-sound select { max-width: 240px; padding: 6px 8px; font-size: 14px; }
+.catalog-page .script-sound button { padding: 6px 10px; }
+.script-line-actions { display: grid; grid-template-columns: repeat(2, auto); gap: 6px; }
+.catalog-page .script-line-actions button { padding: 6px 12px; font-size: 14px; }
+.catalog-page button.script-add-line { margin-top: 12px; width: 100%; padding: 14px; border: 2px dashed #c8c8cc; box-shadow: none; background: transparent; color: var(--ink-sub); }
+
+/* 再生 */
+.script-preview { position: fixed; inset: 0; z-index: 100; }
+.catalog-page button.script-preview-close { position: fixed; right: 20px; top: 20px; z-index: 101; padding: 12px 24px; font-size: 18px; }

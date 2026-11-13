@@ -2,7 +2,16 @@ import { TEAM_COUNT } from '../config'
 import { isOnline, useNow, usePresenceAll } from '../net/hooks'
 import { presenceKey, type Identity } from '../types'
 
-export default function TopScreen({ onSelect, onOpenCatalog }: { onSelect: (i: Identity) => void; onOpenCatalog?: () => void }) {
+export default function TopScreen({
+  onSelect,
+  onOpenCatalog,
+  onOpenScript,
+}: {
+  onSelect: (i: Identity) => void
+  onOpenCatalog?: () => void
+  /** セリフ編集（?debug=true のときだけ） */
+  onOpenScript?: () => void
+}) {
   // すでに別の端末で起動している役割には「起動中」の目印を出す
   const presence = usePresenceAll()
   const now = useNow()
@@ -25,7 +34,10 @@ export default function TopScreen({ onSelect, onOpenCatalog }: { onSelect: (i: I
           <div className="top-legend"><span className="tile-live">起動中</span> は、すでに別の端末で使われています</div>
           <div className="top-updated">更新 {__UPDATED_AT__}</div>
         </div>
-        {onOpenCatalog && <button className="catalog-link" onClick={onOpenCatalog}>商品を登録</button>}
+        <div className="top-debug-links">
+          {onOpenScript && <button className="catalog-link script-link" onClick={onOpenScript}>セリフ編集</button>}
+          {onOpenCatalog && <button className="catalog-link" onClick={onOpenCatalog}>商品を登録</button>}
+        </div>
       </header>
 
       <div className="top-cards">

@@ -7,6 +7,7 @@ import { useTeam, usePresence } from './net/hooks'
 import { getBackend } from './net/index'
 import { ProductsProvider, useProducts } from './santazon/useProducts'
 import CatalogScreen from './screens/CatalogScreen'
+import ScriptScreen from './screens/ScriptScreen'
 import KeyboxScreen from './screens/KeyboxScreen'
 import MasterScreen from './screens/MasterScreen'
 import PlayerScreen from './screens/PlayerScreen'
@@ -20,11 +21,15 @@ function isDebug(): boolean {
   return new URLSearchParams(location.search).get('debug') === 'true'
 }
 
-function isCatalogPath(): boolean {
-  if (!isDebug()) return false
+type Page = 'catalog' | 'script'
+
+/** ?debug=true のときだけ開く画面（商品登録・セリフ編集） */
+function debugPage(): Page | null {
+  if (!isDebug()) return null
   const path = location.pathname.replace(/\/+$/, '')
   const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
-  return path === `${base}/catalog` || location.hash === '#catalog'
+  for (const p of ['catalog', 'script'] as const) if (path === `${base}/${p}` || location.hash === `#${p}`) return p
+  return null
 }
 
 function Session({ identity }: { identity: Identity }) {
@@ -100,7 +105,7 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
 }
 
 export default function App() {
-  const [catalog, setCatalog] = useState(isCatalogPath)
+  const [page, setPage] = useState<Page | null>(debugPage)
   const [identity, setIdentity] = useState<Identity | null>(null)
   // 再接続：Session を作り直して購読・heartbeat を張り直す
   const [connKey, setConnKey] = useState(0)
@@ -121,7 +126,7 @@ export default function App() {
   }, [identity])
 
   useEffect(() => {
-    const onPop = () => setCatalog(isCatalogPath())
+    const onPop = () => setPage(debugPage())
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
@@ -131,20 +136,20 @@ export default function App() {
     url.searchParams.set('debug', 'true')
     return url.pathname + url.search
   }
-  const openCatalog = () => {
+  const openPage = (p: Page) => {
     const base = import.meta.env.BASE_URL
     const prefix = base.endsWith('/') ? base : `${base}/`
-    history.pushState({}, '', withDebug(`${prefix}catalog`))
-    setCatalog(true)
+    history.pushState({}, '', withDebug(`${prefix}${p}`))
+    setPage(p)
   }
-  const closeCatalog = () => {
+  const closePage = () => {
     history.pushState({}, '', withDebug(import.meta.env.BASE_URL))
-    setCatalog(false)
+    setPage(null)
   }
 
   return (
     <ProductsProvider>
-    {catalog ? <CatalogScreen onBack={closeCatalog} /> : (
+    {page === 'catalog' ? <CatalogScreen onBack={closePage} /> : page === 'script' ? <ScriptScreen onBack={closePage} /> : (
     <Stage>
       {identity ? (
         <>
@@ -160,7 +165,11 @@ export default function App() {
           )}
         </>
       ) : (
-        <TopScreen onSelect={select} onOpenCatalog={isDebug() ? openCatalog : undefined} />
+        <TopScreen
+          onSelect={select}
+          onOpenCatalog={isDebug() ? () => openPage('catalog') : undefined}
+          onOpenScript={isDebug() ? () => openPage('script') : undefined}
+        />
       )}
     </Stage>
     )}

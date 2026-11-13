@@ -13,6 +13,7 @@ import { GAMES } from '../games'
 import { useTeam } from '../net/hooks'
 import { isCorrectCart, isGame1LoseCart, ORDER_STAGES, PROBLEMS } from '../santazon/products'
 import { useProducts } from '../santazon/useProducts'
+import { useScriptScene } from '../script/scriptData'
 import { CLEAR, ENDING, NOVEL, RECORDS, characterImage } from '../scenario'
 import { adultWaitMs, setAdultSkip } from '../adultWait'
 import { DEFAULT_WORD, type OrderItem } from '../types'
@@ -37,6 +38,8 @@ const hideImg = (e: React.SyntheticEvent<HTMLImageElement>) => {
 export default function PlayerScreen({ team }: { team: number }) {
   const { products } = useProducts()
   const [doc, update, loaded] = useTeam(team)
+  // セリフ編集で保存したセリフ（無ければコードのまま）
+  const edited = useScriptScene(doc.stage, doc.phase)
   // 「はじめから／つづきから」を選んだか（再接続・リセット後は再び選ばせる）
   const [entered, setEntered] = useState(false)
 
@@ -268,7 +271,7 @@ export default function PlayerScreen({ team }: { team: number }) {
       <>
         <NovelPart
           key={`n${doc.stage}`}
-          scene={NOVEL[doc.stage - 1]}
+          scene={edited ?? NOVEL[doc.stage - 1]}
           // フェードインが終わって、何もない背景を少し見せてからキャラを出す
           lead={fading ? FADE_MS + 800 : undefined}
           onFinish={() => (doc.stage === HIDE_STAGE || doc.stage === WORD_STAGE ? fadeThen(() => update({ phase: 'game' })) : update({ phase: 'game' }))}
@@ -315,7 +318,7 @@ export default function PlayerScreen({ team }: { team: number }) {
     body = (
       <NovelPart
         key={`c${doc.stage}`}
-        scene={CLEAR[doc.stage - 1]}
+        scene={edited ?? CLEAR[doc.stage - 1]}
         onFinish={() => {
           if (doc.stage === 1) update({ phase: 'game', markCleared: true })
           if (doc.stage === HIDE_STAGE) setClearNext(doc.stage)
@@ -332,7 +335,7 @@ export default function PlayerScreen({ team }: { team: number }) {
       />
     )
   } else {
-    body = <NovelPart key="end" scene={ENDING} onFinish={() => {}} />
+    body = <NovelPart key="end" scene={edited ?? ENDING} onFinish={() => {}} />
   }
 
   // 会話・ゲーム画面は枠で囲み、下にメニューボタンを並べる
