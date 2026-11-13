@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { GAME_COUNT, SECRET_TAP_COUNT, SECRET_TAP_WINDOW_MS, STAGE_W } from '../config'
-import type { Phase } from '../types'
+import type { JumpTarget } from '../types'
 
 /** 隠しメニューの判定エリア（画面左上の一辺 px） */
 const SECRET_ZONE = 220
+
+/** ステージごとのゲーム中の行き先（無ければ「ゲーム」ひとつ） */
+const JUMP_GAMES: Record<number, { label: string; step?: JumpTarget['step'] }[]> = {
+  1: [
+    { label: 'マーク', step: 'quiz' },
+    { label: '輪投げ', step: 'order' },
+  ],
+  2: [
+    { label: '開始', step: 'start' },
+    { label: 'アミー後', step: 'amy' },
+    { label: 'ジミー後', step: 'jimmy' },
+    { label: 'トミー後', step: 'tommy' },
+  ],
+}
 
 interface Props {
   onReset: () => void
@@ -11,7 +25,7 @@ interface Props {
   /** 指定時のみ「ロックを外す」ボタンを表示（プレイヤー用） */
   onUnlock?: () => void
   /** 指定時のみ「シーンジャンプ」ボタンを表示（プレイヤー用） */
-  onJump?: (stage: number, phase: Phase) => void
+  onJump?: (target: JumpTarget) => void
   /** false のときは「ロックを外す」を出さない（ロックされていないとき） */
   locked?: boolean
   /** true のときフルスクリーン切り替えボタンを表示 */
@@ -64,10 +78,10 @@ export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, loc
     return () => window.removeEventListener('pointerdown', on, true)
   }, [])
 
-  const jump = (stage: number, phase: Phase) => {
+  const jump = (target: JumpTarget) => {
     setOpen(false)
     setJumping(false)
-    onJump?.(stage, phase)
+    onJump?.(target)
   }
 
   return (
@@ -75,19 +89,21 @@ export default function HiddenMenu({ onReset, onReconnect, onUnlock, onJump, loc
       {open && (
         <div className="modal-back">
           {jumping && onJump ? (
-            <div className="modal">
+            <div className="modal jump-modal">
               <h2>シーンジャンプ</h2>
               <div className="jump-grid">
                 {Array.from({ length: GAME_COUNT }, (_, i) => i + 1).map((stage) => (
                   <div className="jump-row" key={stage}>
                     <span>{`ステージ${stage}`}</span>
-                    <button onClick={() => jump(stage, 'novel')}>会話</button>
-                    <button onClick={() => jump(stage, 'game')}>ゲーム</button>
+                    <button onClick={() => jump({ stage, phase: 'novel' })}>会話</button>
+                    {(JUMP_GAMES[stage] ?? [{ label: 'ゲーム' }]).map((g) => (
+                      <button key={g.label} onClick={() => jump({ stage, phase: 'game', step: g.step })}>{g.label}</button>
+                    ))}
                   </div>
                 ))}
                 <div className="jump-row">
                   <span>エンディング</span>
-                  <button onClick={() => jump(GAME_COUNT, 'end')}>会話</button>
+                  <button onClick={() => jump({ stage: GAME_COUNT, phase: 'end' })}>会話</button>
                 </div>
               </div>
               <button onClick={() => setJumping(false)}>戻る</button>

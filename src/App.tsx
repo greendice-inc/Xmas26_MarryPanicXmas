@@ -5,7 +5,7 @@ import { ROOM_BY_TEAM } from './config'
 import { game1OrderedQty } from './santazon/products'
 import { useTeam, usePresence } from './net/hooks'
 import { getBackend } from './net/index'
-import { ProductsProvider } from './santazon/useProducts'
+import { ProductsProvider, useProducts } from './santazon/useProducts'
 import CatalogScreen from './screens/CatalogScreen'
 import KeyboxScreen from './screens/KeyboxScreen'
 import MasterScreen from './screens/MasterScreen'
@@ -44,6 +44,7 @@ function Session({ identity }: { identity: Identity }) {
 /** プレイヤー端末の隠しメニュー。チームの状態を見て、ロック解除の表示を決める */
 function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onReset: () => void; onReconnect: () => void }) {
   const [doc] = useTeam(team)
+  const { products } = useProducts()
   const skipWait = useAdultSkip()
   return (
     <HiddenMenu
@@ -52,9 +53,20 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
       onSkipWait={skipWait ?? undefined}
       fullscreenToggle
       locked={doc.locked}
-      onJump={(stage, phase) => {
+      onJump={({ stage, phase, step }) => {
         // ステージ1の注文は子供部屋で行う。それより後のシーンでは、正しい3点がすでに消費されている
         const pastStage1 = phase === 'end' || stage > 1
+        // ステージ2：見つけた人数に合わせて、案内の済み具合・記録・検索済みリストを揃える
+        const found = step === 'amy' ? 1 : step === 'jimmy' ? 2 : step === 'tommy' ? 3 : 0
+        const names = ['マネキン', 'セーター', 'オーバーオール']
+        const idOf = (name: string) => products.find((p) => p.name === name)?.id
+        const searched =
+          stage === 2 && phase === 'game'
+            ? names.slice(0, found).flatMap((n) => idOf(n) ?? [])
+            : stage > 2 || phase === 'end'
+              ? names.flatMap((n) => idOf(n) ?? [])
+              : []
+        const stage2Played = found > 0
         getBackend()
           .set('teams', String(team), {
             started: true,
@@ -64,12 +76,13 @@ function PlayerHiddenMenu({ team, onReset, onReconnect }: { team: number; onRese
             locked: false,
             order: null,
             orderedQty: pastStage1 ? game1OrderedQty() : [],
-            searched: [],
-            markCleared: false,
+            searched,
+            // ステージ1のゲーム2（正しい注文）は、特定が終わったあとの子供部屋
+            markCleared: stage === 1 && step === 'order',
             // ステージ2の案内でリスト追加検索と商品カードが解放される。それより後はすでに解放済み
-            searchUnlocked: stage > 2 || phase === 'end',
-            records: stage > 2 || phase === 'end' ? ['st2-card'] : [],
-            hide: { tutorialDone: false, found: 0 },
+            searchUnlocked: stage > 2 || phase === 'end' || stage2Played,
+            records: stage > 2 || phase === 'end' || stage2Played ? ['st2-card'] : [],
+            hide: { tutorialDone: stage2Played, found },
             enterAt: Date.now(),
             updatedAt: Date.now(),
           })

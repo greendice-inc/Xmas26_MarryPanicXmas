@@ -18,6 +18,14 @@ export interface PresenceDoc {
 /** novel=会話 / game=ゲーム / clear=クリア後のお礼 / end=エンディング */
 export type Phase = 'novel' | 'game' | 'clear' | 'end'
 
+/** シーンジャンプの行き先。step は同じステージの中での位置 */
+export interface JumpTarget {
+  stage: number
+  phase: Phase
+  /** quiz=マークと得点当て / order=正しい注文 / start=ゲームのはじめ / amy・jimmy・tommy=その子を見つけたあと */
+  step?: 'quiz' | 'order' | 'start' | 'amy' | 'jimmy' | 'tommy'
+}
+
 export interface OrderItem {
   id: string
   qty: number

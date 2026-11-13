@@ -454,7 +454,7 @@ button.armed { animation: armed-pulse .6s ease-in-out infinite alternate; }
 .santazon button.sz-hint-ch:active { filter: none; }
 .sz-ghost { position: absolute; z-index: 30; pointer-events: none; opacity: .85; transform: scale(1.1); }
 .santazon .sz-ghost.is-char {
-  width: auto; min-width: 72px; height: 72px; padding: 0 16px; font-size: 40px;
+  width: auto; min-width: 72px; height: 72px; padding: 0 16px; font-size: 40px; color: #fff;
 }
 .sz-detail { display: flex; gap: 24px; align-items: flex-start; background: #f7f7f7; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
 .sz-thumb-lg { flex: none; width: 240px; height: 240px; background: #fff; }
@@ -630,8 +630,9 @@ button.kana-key:active { box-shadow: none; transform: translateY(4px); }
 .sz-answer input { font: inherit; font-size: 34px; padding: 10px 20px; width: 360px; border: 2px solid #888c8c; border-radius: 10px; user-select: text; }
 .jump-grid { display: flex; flex-direction: column; gap: 12px; }
 .jump-row { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 900; }
-.jump-row span { width: 280px; }
-.jump-row button { flex: 1; font-size: 32px; padding: 12px 0; }
+.jump-row span { width: 220px; flex: none; }
+.modal.jump-modal { min-width: 1300px; }
+.jump-row button { flex: 1; font-size: 28px; padding: 12px 8px; }
 
 /* 隠しメニューのボタンは全部グレー */
 .modal button { --edge: #1c1c1f; background: var(--charcoal); }
@@ -881,7 +882,8 @@ button.hide-edit-btn {
 .hide-elf.is-compact { left: 70px; right: 70px; bottom: 214px; }
 .hide-elf.is-compact img { width: 200px; height: 230px; }
 .hide-elf.is-compact p { min-height: 130px; padding: 28px 90px 28px 44px; font-size: 38px; }
-.hide-elf.is-wait p { border-color: #ffd400; box-shadow: 0 0 0 6px rgba(255, 212, 0, .5), 0 10px 30px rgba(0, 0, 0, .25); }
+/* 発話枠の「待ち」は青で示す。ハイライト（黄色）と混ざらないようにする */
+.hide-elf.is-wait p { border-color: #2f6fde; box-shadow: 0 0 0 6px rgba(47, 111, 222, .4), 0 10px 30px rgba(0, 0, 0, .25); }
 .sz-elf-back.hide-elf-back { z-index: 74; background: rgba(15, 17, 17, .25); }
 .hide-elf-back .sz-elf-line { bottom: 236px; left: 70px; right: 70px; }
 .hide-kid-line p { position: relative; padding-right: 90px; }

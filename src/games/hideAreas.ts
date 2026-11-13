@@ -28,10 +28,10 @@ export interface HideArea {
  * 誰がどこに隠れているかも、編集画面で選び直せる。
  */
 export const DEFAULT_HIDE_AREAS: HideArea[] = [
-  { id: 'curtain', label: 'カーテン', role: 'dummy', x: 11, y: 22, w: 13, h: 36 },
+  { id: 'shelf', label: '棚の下', role: 'dummy', x: 11, y: 22, w: 13, h: 36 },
   { id: 'tree', label: 'ツリー', role: 'amy', x: 28, y: 7, w: 24, h: 53 },
   { id: 'present', label: 'プレゼント', role: 'jimmy', x: 52, y: 21, w: 14, h: 28 },
-  { id: 'shelf', label: '棚の下', role: 'tommy', x: 73, y: 46, w: 11, h: 16 },
+  { id: 'curtain', label: 'カーテン', role: 'tommy', x: 73, y: 46, w: 11, h: 16 },
 ]
 
 const COL = 'config'
